@@ -31,7 +31,6 @@
 
 (defun habitica-tasks ()
   (interactive)
-  (habitica-get-dailys)
   (switch-to-buffer "*habitica*")
   (delete-region (point-min) (point-max))
   (org-mode)
