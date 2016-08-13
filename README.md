@@ -1,5 +1,7 @@
 # emacs-habitica
 Emacs Extension for Habitica
+[[https://habitica.com/]]
+
 
 ## Installation
 Get the file.
