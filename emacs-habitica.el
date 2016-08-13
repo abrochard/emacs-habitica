@@ -27,7 +27,9 @@
               (insert "** TODO ")
             (insert "** DONE "))
           (insert (concat (assoc-default 'text value) "\n"))
-         ))))
+          (if (and (assoc-default 'date value) (< 1 (length (assoc-default 'date value))))
+              (insert (concat "   DEADLINE: <" (assoc-default 'date value) ">\n")))
+          ))))
 
 (defun habitica-tasks ()
   (interactive)
