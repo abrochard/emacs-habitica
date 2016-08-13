@@ -8,6 +8,16 @@
 ;;(defvar habitica-uid "123")
 ;;(defvar habitica-token "456")
 
+
+;;; autoload
+
+(define-minor-mode habitica-mode
+  "Mode to edit and manage your Habitica tasks"
+  :lighter " Habitica"
+  :keymap (let ((map (make-sparse-keymap)))
+            (define-key map (kbd "C-x t") 'habitica-new-task)
+            map))
+
 (defun habitica-send-request (endpoint type data)
   "Base function to send request to the Habitica API"
   (let ((url  (concat habitica-base endpoint))
@@ -69,6 +79,7 @@
   (switch-to-buffer "*habitica*")
   (delete-region (point-min) (point-max))
   (org-mode)
+  (habitica-mode)
   (insert "#+TITLE: Habitica Dashboard\n\n")
   (let ((habitica-data (habitica-get-tasks)))
     (insert "* Habits\n")
