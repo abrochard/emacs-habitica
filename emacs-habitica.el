@@ -15,7 +15,8 @@
   "Mode to edit and manage your Habitica tasks"
   :lighter " Habitica"
   :keymap (let ((map (make-sparse-keymap)))
-            (define-key map (kbd "C-x t") 'habitica-new-task)
+            (define-key map (kbd "C-x t n") 'habitica-new-task)
+            (define-key map (kbd "C-x t t") 'habitica-todo-task)
             map))
 
 (defun habitica-send-request (endpoint type data)
@@ -42,7 +43,7 @@
   (insert "\n")
   (if (and (assoc-default 'date task) (< 1 (length (assoc-default 'date task))))
       (insert (concat "   DEADLINE: <" (assoc-default 'date value) ">\n")))
-  (org-set-property "id" (assoc-default '_id task)))
+  (org-set-property "ID" (assoc-default '_id task)))
 
 (defun habitica-parse-tasks (tasks type)
   "Parses the tasks to org-mode format"
@@ -63,7 +64,20 @@
            (car (org-get-tags-at)))))
 
 (defun habitica-score-task (id direction)
+  "Sends a post reauest to score a task"
   (habitica-send-request (concat "/tasks/" id "/score/" direction) "POST" ""))
+
+(defun habitica-todo-task ()
+  "Marks the current task as done or todo depending on its current state"
+  (interactive)
+  (if (not (equal (buffer-name) "*habitica*"))
+      (message "You must be inside the habitica buffer")
+    (if (equal (format "%s" (org-element-property :todo-type (org-element-at-point))) "todo")
+        (progn (habitica-score-task (org-element-property :ID (org-element-at-point)) "up")
+               (org-todo "DONE"))
+      (progn (habitica-score-task (org-element-property :ID (org-element-at-point)) "down")
+             (org-todo "TODO"))
+      )))
 
 (defun habitica-new-task ()
   "Tries to be smart to create a new task based on context"
