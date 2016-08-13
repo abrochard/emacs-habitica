@@ -33,18 +33,22 @@
   "Gets all the user's tasks"
   (habitica-send-request "/tasks/user" "GET" ""))
 
+(defun habitica-insert-task (task)
+  "Formats the task into org mode todo heading"
+  (if (eq (assoc-default 'completed task) :json-false)
+      (insert "** TODO ")
+    (insert "** DONE "))
+  (insert (assoc-default 'text task))
+  (insert "\n")
+  (if (and (assoc-default 'date task) (< 1 (length (assoc-default 'date task))))
+      (insert (concat "   DEADLINE: <" (assoc-default 'date value) ">\n")))
+  (org-set-property "id" (assoc-default '_id task)))
+
 (defun habitica-parse-tasks (tasks type)
   "Parses the tasks to org-mode format"
   (dolist (value (append tasks nil))
     (if (equal (assoc-default 'type value) type)
-        (progn
-          (if (eq (assoc-default 'completed value) :json-false)
-              (insert "** TODO ")
-            (insert "** DONE "))
-          (insert (concat (assoc-default 'text value) "\n"))
-          (if (and (assoc-default 'date value) (< 1 (length (assoc-default 'date value))))
-              (insert (concat "   DEADLINE: <" (assoc-default 'date value) ">\n")))
-          ))))
+        (habitica-insert-task value))))
 
 (defun habitica-create-task (type text &optional down)
   "Sends a post request to create a new user task"
@@ -56,19 +60,19 @@
   "Get the current type based on the cursor position"
   (save-excursion
     (progn (re-search-backward "^\* " (point-min) t)
-           (let ((text (org-element-property :raw-value (org-element-at-point))))
-             (cond ((equal "Habits" text) "habit")
-                   ((equal "Daily Tasks" text) "daily")
-                   ((equal "To-Dos" text) "todo"))))))
+           (car (org-get-tags-at)))))
+
+(defun habitica-score-task (id direction)
+  (habitica-send-request (concat "/tasks/" id "/score/" direction) "POST" ""))
 
 (defun habitica-new-task ()
   "Tries to be smart to create a new task based on context"
   (interactive)
   (if (not (equal (buffer-name) "*habitica*"))
       (message "You must be inside the habitica buffer")
-    (progn (habitica-create-task (habitica-get-current-type) (thing-at-point 'line))
-           (beginning-of-line)
-           (insert "** TODO "))))
+    (progn (beginning-of-line)
+           (kill-line)
+           (habitica-insert-task (habitica-create-task (habitica-get-current-type) (car kill-ring-yank-pointer))))))
 
 (defun habitica-tasks ()
   (interactive)
@@ -78,15 +82,15 @@
   (habitica-mode)
   (insert "#+TITLE: Habitica Dashboard\n\n")
   (let ((habitica-data (habitica-get-tasks)))
-    (insert "* Habits\n")
+    (insert "* Habits :habit:\n")
     (habitica-parse-tasks habitica-data "habit")
-    (insert "\n")
-    (insert "* Daily Tasks\n")
+    (insert "* Daily Tasks :daily:\n")
     (habitica-parse-tasks habitica-data "daily")
-    (insert "\n")
-    (insert "* To-Dos\n")
+    (insert "* To-Dos :todo:\n")
     (habitica-parse-tasks habitica-data "todo")
     )
+  (org-align-all-tags)
+  (org-content)
   )
 
 (provide 'habitica)
