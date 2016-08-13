@@ -29,7 +29,6 @@
       (delete-region (point-min) (string-match-p "{" (buffer-string)))
       (assoc-default 'data (json-read-from-string (buffer-string))))))
 
-
 (defun habitica-get-tasks ()
   "Gets all the user's tasks"
   (habitica-send-request "/tasks/user" "GET" ""))
@@ -52,9 +51,6 @@
   (if down
       (habitica-send-request "/tasks/user" "POST" (concat "type=" type "&text=" text "&down=" down))
     (habitica-send-request "/tasks/user" "POST" (concat "type=" type "&text=" text))))
-
-;; (habitica-create-task "daily" "test case")
-
 
 (defun habitica-get-current-type ()
   "Get the current type based on the cursor position"
