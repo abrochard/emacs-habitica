@@ -108,6 +108,13 @@
       )
     ))
 
+(defun habitica-refresh-profile ()
+  "Kills the current profile and parses a new one"
+  (save-excursion
+    (progn (re-search-backward "^\* Profile" (point-min) t)
+           (org-cut-subtree)
+           (habitica-parse-profile))))
+
 (defun habitica-todo-task ()
   "Marks the current task as done or todo depending on its current state"
   (interactive)
@@ -115,10 +122,12 @@
       (message "You must be inside the habitica buffer")
     (if (equal (format "%s" (org-element-property :todo-type (org-element-at-point))) "todo")
         (progn (habitica-score-task (org-element-property :ID (org-element-at-point)) "up")
-               (org-todo "DONE"))
+               (org-todo "DONE")
+               (habitica-refresh-profile))
       (progn (habitica-score-task (org-element-property :ID (org-element-at-point)) "down")
-             (org-todo "TODO"))
-      )))
+             (org-todo "TODO")
+             (habitica-refresh-profile)))
+      ))
 
 (defun habitica-new-task ()
   "Tries to be smart to create a new task based on context"
