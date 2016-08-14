@@ -104,7 +104,7 @@
     (insert (concat "** Exp: " (format "%s" (assoc-default 'exp profile)) " / " (format "%d" (assoc-default 'toNextLevel profile)) "\n"))
     (let ((gold (format "%d" (assoc-default 'gp profile))))
       (insert (concat "** Gold: " gold "\n"))
-      (insert (concat "** Silver: " (format "%d" (* 10 (- (assoc-default 'gp profile) (string-to-number gold)))) "\n"))
+      (insert (concat "** Silver: " (format "%d" (* 100 (- (assoc-default 'gp profile) (string-to-number gold)))) "\n"))
       )
     ))
 
