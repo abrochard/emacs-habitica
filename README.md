@@ -18,4 +18,10 @@ To see your tasks, call
 habitica-tasks
 ```
 
-If you want to create a new task, navigate inside the section that you want to create the task under, start typing the name of your task on a new line and press C-x t.
+If you want to create a new task, navigate inside the section that you want to create the task under, start typing the name of your task on a new line and press C-x t n.
+To mark a task as done, place cursor on line and press C-x t t.
+
+## TODO
+- user status header
+- task deletion
+- everything else

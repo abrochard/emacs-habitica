@@ -5,19 +5,42 @@
 
 
 (defvar habitica-base "https://habitica.com/api/v3")
-;;(defvar habitica-uid "123")
-;;(defvar habitica-token "456")
+;; (defvar habitica-uid "123") ;; replace with correct user id
+;; (defvar habitica-token "456") ;; replace with correct token
 
+
+(defvar habitica-command-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "n"         #'habitica-new-task)
+    (define-key map "t"         #'habitica-todo-task)
+    map)
+  "Keymap of habitica interactive commands.")
+
+(defcustom habitica-keymap-prefix (kbd "C-x t")
+  "Prefix for key bindings of habitica-mode"
+  :group 'habitica
+  :type 'string
+  :risky t
+  :set
+  (lambda (variable key)
+    (when (and (boundp variable) (boundp 'habitica-mode-map))
+      (define-key habitica-mode-map (symbol-value variable) nil)
+      (define-key habitica-mode-map key habitica-command-map))
+    (set-default variable key)))
+
+(defvar habitica-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map habitica-keymap-prefix habitica-command-map)
+    (define-key map [menu-bar habitica] habitica-mode-menu-map)
+    map)
+  "Keymap of command `habitica-mode'.")
 
 ;;; autoload
 
 (define-minor-mode habitica-mode
   "Mode to edit and manage your Habitica tasks"
   :lighter " Habitica"
-  :keymap (let ((map (make-sparse-keymap)))
-            (define-key map (kbd "C-x t n") 'habitica-new-task)
-            (define-key map (kbd "C-x t t") 'habitica-todo-task)
-            map))
+  :keymap habitica-mode-map)
 
 (defun habitica-send-request (endpoint type data)
   "Base function to send request to the Habitica API"
