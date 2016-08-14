@@ -90,6 +90,24 @@
   "Sends a post reauest to score a task"
   (habitica-send-request (concat "/tasks/" id "/score/" direction) "POST" ""))
 
+(defun habitica-get-profile ()
+  "Get the user's raw profile data"
+  (habitica-send-request "/user" "GET" ""))
+
+(defun habitica-parse-profile ()
+  "Formats the user profile as a header"
+  (let ((profile (assoc-default 'stats (habitica-get-profile))))
+    (insert "* Profile\n")
+    (insert (concat "** Level: " (format "%d" (assoc-default 'lvl profile)) "\n"))
+    (insert (concat "** Class: " (assoc-default 'class profile) "\n"))
+    (insert (concat "** Health: " (format "%s" (assoc-default 'hp profile)) " / " (format "%d" (assoc-default 'maxHealth profile)) "\n"))
+    (insert (concat "** Exp: " (format "%s" (assoc-default 'exp profile)) " / " (format "%d" (assoc-default 'toNextLevel profile)) "\n"))
+    (let ((gold (format "%d" (assoc-default 'gp profile))))
+      (insert (concat "** Gold: " gold "\n"))
+      (insert (concat "** Silver: " (format "%d" (* 10 (- (assoc-default 'gp profile) (string-to-number gold)))) "\n"))
+      )
+    ))
+
 (defun habitica-todo-task ()
   "Marks the current task as done or todo depending on its current state"
   (interactive)
@@ -118,6 +136,7 @@
   (org-mode)
   (habitica-mode)
   (insert "#+TITLE: Habitica Dashboard\n\n")
+  (habitica-parse-profile)
   (let ((habitica-data (habitica-get-tasks)))
     (insert "* Habits :habit:\n")
     (habitica-parse-tasks habitica-data "habit")
