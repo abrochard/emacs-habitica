@@ -26,4 +26,6 @@ To mark a task as done, place cursor on line and press C-x t t.
 - up/down habits
 - get menu showing
 - get the refresh keybinding to work
+- rewards integration
+- pets?
 - everything else

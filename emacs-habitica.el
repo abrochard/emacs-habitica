@@ -6,6 +6,7 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'org)
 (require 'json)
 (require 'org-element)
@@ -14,6 +15,8 @@
 (defvar habitica-base "https://habitica.com/api/v3")
 (defvar habitica-uid "123") ;; replace with correct user id
 (defvar habitica-token "456") ;; replace with correct token
+
+(defvar habitica-tags '())
 
 
 (defvar habitica-command-map
@@ -90,6 +93,9 @@ TASK is the parsed JSON response."
   (insert "\n")
   (if (and (assoc-default 'date task) (< 1 (length (assoc-default 'date task))))
       (insert (concat "   DEADLINE: <" (assoc-default 'date task) ">\n")))
+  (if (< 0 (length (assoc-default 'tags task)))
+      (dolist (tag (append (assoc-default 'tags task) nil))
+        (org-set-tags-to (assoc-default (format "%s" tag) habitica-tags))))
   (org-set-property "ID" (assoc-default '_id task)))
 
 (defun habitica-parse-tasks (tasks type)
@@ -149,6 +155,12 @@ DIRECTION is up or down, if the task is a habit."
            (org-cut-subtree)
            (habitica-parse-profile))))
 
+(defun habitica-get-tags ()
+  "Get the dictionary id/tags."
+  (setq habitica-tags '())
+  (dolist (value (append (habitica-send-request "/tags" "GET" "") nil))
+    (setq habitica-tags (cl-acons (assoc-default 'id value) (assoc-default 'name value) habitica-tags))))
+
 (defun habitica-todo-task ()
   "Mark the current task as done or todo depending on its current state."
   (interactive)
@@ -183,6 +195,7 @@ NAME is the name of the new task to create."
   (org-mode)
   (habitica-mode)
   (insert "#+TITLE: Habitica Dashboard\n\n")
+  (habitica-get-tags)
   (habitica-parse-profile)
   (let ((habitica-data (habitica-get-tasks)))
     (insert "* Habits :habit:\n")
