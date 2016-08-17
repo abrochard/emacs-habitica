@@ -86,9 +86,10 @@ DATA is the form to be sent as x-www-form-urlencoded."
   "Format the task into org mode todo heading.
 
 TASK is the parsed JSON response."
-  (if (eq (assoc-default 'completed task) :json-false)
-      (insert "** TODO ")
-    (insert "** DONE "))
+  (cond ((eq (assoc-default 'up task) t) (insert "** DONE "))
+        ((eq (assoc-default 'down task) t) (insert "** TODO "))
+        ((eq (assoc-default 'completed task) :json-false) (insert "** TODO "))
+        ((eq (assoc-default 'completed task) t) (insert "** DONE ")))
   (insert (assoc-default 'text task))
   (insert "\n")
   (if (and (assoc-default 'date task) (< 1 (length (assoc-default 'date task))))
