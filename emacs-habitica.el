@@ -1,23 +1,31 @@
+;;; package --- Summary
+
+;;; Commentary:
+;; Soon
 
 
+;;; Code:
 
+(require 'org)
 (require 'json)
+(require 'org-element)
 
 
 (defvar habitica-base "https://habitica.com/api/v3")
-;; (defvar habitica-uid "123") ;; replace with correct user id
-;; (defvar habitica-token "456") ;; replace with correct token
+(defvar habitica-uid "123") ;; replace with correct user id
+(defvar habitica-token "456") ;; replace with correct token
 
 
 (defvar habitica-command-map
   (let ((map (make-sparse-keymap)))
     (define-key map "n"         #'habitica-new-task)
     (define-key map "t"         #'habitica-todo-task)
+    (define-key map "g"         #'habitica-tasks)
     map)
   "Keymap of habitica interactive commands.")
 
 (defcustom habitica-keymap-prefix (kbd "C-x t")
-  "Prefix for key bindings of habitica-mode"
+  "Prefix for key bindings of habitica-mode."
   :group 'habitica
   :type 'string
   :risky t
@@ -27,6 +35,16 @@
       (define-key habitica-mode-map (symbol-value variable) nil)
       (define-key habitica-mode-map key habitica-command-map))
     (set-default variable key)))
+
+
+;;; Global Habitica menu
+(defvar habitica-mode-menu-map
+  (easy-menu-create-menu
+   "Habitica"
+   '(["Create a new task" habitica-new-task habitica-mode]
+     ["Mark task as todo/done" habitica-todo-task habitica-mode]
+     ["Refresh tasks" habitica-tasks t]))
+  "Menu of command `habitica-mode'.")
 
 (defvar habitica-mode-map
   (let ((map (make-sparse-keymap)))
@@ -43,7 +61,11 @@
   :keymap habitica-mode-map)
 
 (defun habitica-send-request (endpoint type data)
-  "Base function to send request to the Habitica API"
+  "Base function to send request to the Habitica API.
+
+ENDPOINT can be found in the habitica doc.
+TYPE is the type of HTTP request (GET, POST, DELETE)
+DATA is the form to be sent as x-www-form-urlencoded."
   (let ((url  (concat habitica-base endpoint))
         (url-request-method        type)
         (url-request-extra-headers `(("Content-Type" . "application/x-www-form-urlencoded") ("x-api-user" . ,habitica-uid) ("x-api-key" . ,habitica-token)))
@@ -54,48 +76,60 @@
       (assoc-default 'data (json-read-from-string (buffer-string))))))
 
 (defun habitica-get-tasks ()
-  "Gets all the user's tasks"
+  "Gets all the user's tasks."
   (habitica-send-request "/tasks/user" "GET" ""))
 
 (defun habitica-insert-task (task)
-  "Formats the task into org mode todo heading"
+  "Format the task into org mode todo heading.
+
+TASK is the parsed JSON response."
   (if (eq (assoc-default 'completed task) :json-false)
       (insert "** TODO ")
     (insert "** DONE "))
   (insert (assoc-default 'text task))
   (insert "\n")
   (if (and (assoc-default 'date task) (< 1 (length (assoc-default 'date task))))
-      (insert (concat "   DEADLINE: <" (assoc-default 'date value) ">\n")))
+      (insert (concat "   DEADLINE: <" (assoc-default 'date task) ">\n")))
   (org-set-property "ID" (assoc-default '_id task)))
 
 (defun habitica-parse-tasks (tasks type)
-  "Parses the tasks to org-mode format"
+  "Parse the tasks to 'org-mode' format.
+
+TASKS is the list of tasks from the JSON response
+TYPE is the type of task that you want to parse (habit, daily, or todo)."
   (dolist (value (append tasks nil))
     (if (equal (assoc-default 'type value) type)
         (habitica-insert-task value))))
 
-(defun habitica-create-task (type text &optional down)
-  "Sends a post request to create a new user task"
+(defun habitica-create-task (type name &optional down)
+  "Send a post request to create a new user task.
+
+TYPE is the type of task that you want to create (habit, daily, or todo)
+NAME is the task name
+DOWN is optional, in case of a habit, if you want to be able to downvote the task."
   (if down
-      (habitica-send-request "/tasks/user" "POST" (concat "type=" type "&text=" text "&down=" down))
-    (habitica-send-request "/tasks/user" "POST" (concat "type=" type "&text=" text))))
+      (habitica-send-request "/tasks/user" "POST" (concat "type=" type "&text=" name "&down=" down))
+    (habitica-send-request "/tasks/user" "POST" (concat "type=" type "&text=" name))))
 
 (defun habitica-get-current-type ()
-  "Get the current type based on the cursor position"
+  "Get the current type based on the cursor position."
   (save-excursion
     (progn (re-search-backward "^\* " (point-min) t)
            (car (org-get-tags-at)))))
 
 (defun habitica-score-task (id direction)
-  "Sends a post reauest to score a task"
+  "Send a post request to score a task.
+
+ID is the id of the task that you are scoring
+DIRECTION is up or down, if the task is a habit."
   (habitica-send-request (concat "/tasks/" id "/score/" direction) "POST" ""))
 
 (defun habitica-get-profile ()
-  "Get the user's raw profile data"
+  "Get the user's raw profile data."
   (habitica-send-request "/user" "GET" ""))
 
 (defun habitica-parse-profile ()
-  "Formats the user profile as a header"
+  "Formats the user profile as a header."
   (let ((profile (assoc-default 'stats (habitica-get-profile))))
     (insert "* Profile\n")
     (insert (concat "** Level: " (format "%d" (assoc-default 'lvl profile)) "\n"))
@@ -109,14 +143,14 @@
     ))
 
 (defun habitica-refresh-profile ()
-  "Kills the current profile and parses a new one"
+  "Kill the current profile and parse a new one."
   (save-excursion
     (progn (re-search-backward "^\* Profile" (point-min) t)
            (org-cut-subtree)
            (habitica-parse-profile))))
 
 (defun habitica-todo-task ()
-  "Marks the current task as done or todo depending on its current state"
+  "Mark the current task as done or todo depending on its current state."
   (interactive)
   (if (not (equal (buffer-name) "*habitica*"))
       (message "You must be inside the habitica buffer")
@@ -129,16 +163,20 @@
              (habitica-refresh-profile)))
       ))
 
-(defun habitica-new-task ()
-  "Tries to be smart to create a new task based on context"
-  (interactive)
+(defun habitica-new-task (name)
+  "Attempt to be smart to create a new task based on context.
+
+NAME is the name of the new task to create."
+  (interactive "sEnter the task name: ")
   (if (not (equal (buffer-name) "*habitica*"))
       (message "You must be inside the habitica buffer")
-    (progn (beginning-of-line)
-           (kill-line)
-           (habitica-insert-task (habitica-create-task (habitica-get-current-type) (car kill-ring-yank-pointer))))))
+    (progn (end-of-line)
+           (newline)
+           (habitica-insert-task (habitica-create-task (habitica-get-current-type) name))
+           (org-content))))
 
 (defun habitica-tasks ()
+  "Main function to summon the habitica buffer."
   (interactive)
   (switch-to-buffer "*habitica*")
   (delete-region (point-min) (point-max))
@@ -159,3 +197,4 @@
   )
 
 (provide 'habitica)
+;;; emacs-habitica.el ends here
