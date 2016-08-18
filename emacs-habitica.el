@@ -28,6 +28,7 @@
     (define-key map "g"         #'habitica-tasks)
     (define-key map "u"         #'habitica-up-task)
     (define-key map "d"         #'habitica-down-task)
+    (define-key map "D"         #'habitica-delete-task)
     map)
   "Keymap of habitica interactive commands.")
 
@@ -199,6 +200,12 @@ NAME is the name of the new task to create."
            (newline)
            (habitica-insert-task (habitica-create-task (habitica-get-current-type) name))
            (org-content))))
+
+(defun habitica-delete-task ()
+  "Delete the task under the cursor."
+  (interactive)
+  (habitica-send-request (concat "/tasks/" (org-element-property :ID (org-element-at-point))) "DELETE" "")
+  (org-cut-subtree))
 
 (defun habitica-tasks ()
   "Main function to summon the habitica buffer."
