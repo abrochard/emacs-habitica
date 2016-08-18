@@ -24,11 +24,5 @@ C-x t n => new task
 C-x t t => cycle todo/done
 C-x t u => + a habit
 C-x t d => - a habit
+C-x t D => delete the task
 ```
-
-## TODO
-- task deletion
-- get menu showing
-- rewards integration
-- pets?
-- everything else

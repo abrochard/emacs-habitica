@@ -1,0 +1,14 @@
+#+TITLE: Roadmap
+
+* Features
+** TODO menu showing
+** TODO rewards integration
+** TODO notifications
+** TODO pets integration
+** TODO avatar integration
+
+** DONE task deletion
+   - State "DONE"       from "TODO"       [2016-08-18 jeu. 18:42]
+
+* Backlog
+** TODO when +/- a habit, check threshold again
