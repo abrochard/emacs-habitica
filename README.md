@@ -17,15 +17,18 @@ To see your tasks, call
 ``` lisp
 habitica-tasks
 ```
-
-If you want to create a new task, navigate inside the section that you want to create the task under, and press C-x t n.
-To mark a task as done, place cursor on line and press C-x t t.
+### Shortcuts
+Place your cursor on the task
+``` lisp
+C-x t n => new task
+C-x t t => cycle todo/done
+C-x t u => + a habit
+C-x t d => - a habit
+```
 
 ## TODO
 - task deletion
-- up/down habits
 - get menu showing
-- get the refresh keybinding to work
 - rewards integration
 - pets?
 - everything else

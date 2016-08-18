@@ -18,12 +18,16 @@
 
 (defvar habitica-tags '())
 
+(defvar habitica-habit-threshold 1)
+
 
 (defvar habitica-command-map
   (let ((map (make-sparse-keymap)))
     (define-key map "n"         #'habitica-new-task)
     (define-key map "t"         #'habitica-todo-task)
     (define-key map "g"         #'habitica-tasks)
+    (define-key map "u"         #'habitica-up-task)
+    (define-key map "d"         #'habitica-down-task)
     map)
   "Keymap of habitica interactive commands.")
 
@@ -86,10 +90,11 @@ DATA is the form to be sent as x-www-form-urlencoded."
   "Format the task into org mode todo heading.
 
 TASK is the parsed JSON response."
-  (cond ((eq (assoc-default 'up task) t) (insert "** DONE "))
-        ((eq (assoc-default 'down task) t) (insert "** TODO "))
-        ((eq (assoc-default 'completed task) :json-false) (insert "** TODO "))
-        ((eq (assoc-default 'completed task) t) (insert "** DONE ")))
+  (if (equal (format "%s" (assoc-default 'type task)) "habit")
+      (cond ((>= (assoc-default 'value task) habitica-habit-threshold) (insert "** DONE "))
+            ((< (assoc-default 'value task) habitica-habit-threshold) (insert "** TODO ")))
+    (cond         ((eq (assoc-default 'completed task) :json-false) (insert "** TODO "))
+                  ((eq (assoc-default 'completed task) t) (insert "** DONE "))))
   (insert (assoc-default 'text task))
   (insert "\n")
   (if (and (assoc-default 'date task) (< 1 (length (assoc-default 'date task))))
@@ -145,9 +150,7 @@ DIRECTION is up or down, if the task is a habit."
     (insert (concat "** Exp: " (format "%s" (assoc-default 'exp profile)) " / " (format "%d" (assoc-default 'toNextLevel profile)) "\n"))
     (let ((gold (format "%d" (assoc-default 'gp profile))))
       (insert (concat "** Gold: " gold "\n"))
-      (insert (concat "** Silver: " (format "%d" (* 100 (- (assoc-default 'gp profile) (string-to-number gold)))) "\n"))
-      )
-    ))
+      (insert (concat "** Silver: " (format "%d" (* 100 (- (assoc-default 'gp profile) (string-to-number gold)))) "\n")))))
 
 (defun habitica-refresh-profile ()
   "Kill the current profile and parse a new one."
@@ -162,19 +165,28 @@ DIRECTION is up or down, if the task is a habit."
   (dolist (value (append (habitica-send-request "/tags" "GET" "") nil))
     (setq habitica-tags (cl-acons (assoc-default 'id value) (assoc-default 'name value) habitica-tags))))
 
+(defun habitica-up-task ()
+  "Up or complete a task."
+  (interactive)
+  (habitica-score-task (org-element-property :ID (org-element-at-point)) "up")
+  (habitica-refresh-profile))
+
+(defun habitica-down-task ()
+  "Down or - a task."
+  (interactive)
+  (habitica-score-task (org-element-property :ID (org-element-at-point)) "down")
+  (habitica-refresh-profile))
+
 (defun habitica-todo-task ()
   "Mark the current task as done or todo depending on its current state."
   (interactive)
   (if (not (equal (buffer-name) "*habitica*"))
       (message "You must be inside the habitica buffer")
     (if (equal (format "%s" (org-element-property :todo-type (org-element-at-point))) "todo")
-        (progn (habitica-score-task (org-element-property :ID (org-element-at-point)) "up")
-               (org-todo "DONE")
-               (habitica-refresh-profile))
-      (progn (habitica-score-task (org-element-property :ID (org-element-at-point)) "down")
-             (org-todo "TODO")
-             (habitica-refresh-profile)))
-      ))
+        (progn (habitica-up-task)
+               (org-todo "DONE"))
+      (progn (habitica-down-task)
+             (org-todo "TODO")))))
 
 (defun habitica-new-task (name)
   "Attempt to be smart to create a new task based on context.
@@ -207,8 +219,7 @@ NAME is the name of the new task to create."
     (habitica-parse-tasks habitica-data "todo")
     )
   (org-align-all-tags)
-  (org-content)
-  )
+  (org-content))
 
 (provide 'habitica)
 ;;; emacs-habitica.el ends here
