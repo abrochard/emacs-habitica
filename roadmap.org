@@ -2,8 +2,13 @@
 
 * Features
 ** TODO menu showing
-** TODO rewards integration
-** TODO notifications
+** TODO rewards integration [1/2]
+   - [X] show rewards
+   - [ ] buy reward
+** TODO notifications [2/3]
+   - [X] show diff in exp
+   - [X] show new level
+   - [ ] show item drop
 ** TODO pets integration
 ** TODO avatar integration
 

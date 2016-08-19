@@ -20,14 +20,20 @@
 
 (defvar habitica-habit-threshold 1)
 
+(defvar habitica-level nil)
+(defvar habitica-exp nil)
+(defvar habitica-max-exp nil)
+(defvar habitica-hp nil)
+(defvar habitica-gold nil)
+(defvar habitica-silver nil)
 
 (defvar habitica-command-map
   (let ((map (make-sparse-keymap)))
     (define-key map "n"         #'habitica-new-task)
     (define-key map "t"         #'habitica-todo-task)
     (define-key map "g"         #'habitica-tasks)
-    (define-key map "u"         #'habitica-up-task)
-    (define-key map "d"         #'habitica-down-task)
+    (define-key map "+"         #'habitica-up-task)
+    (define-key map "-"         #'habitica-down-task)
     (define-key map "D"         #'habitica-delete-task)
     map)
   "Keymap of habitica interactive commands.")
@@ -114,6 +120,17 @@ TYPE is the type of task that you want to parse (habit, daily, or todo)."
     (if (equal (assoc-default 'type value) type)
         (habitica-insert-task value))))
 
+(defun habitica-parse-rewards (rewards)
+  "Parse the rewards to 'org-mode' format.
+
+REWARDS is the list of rewards from the JSON response."
+  (dolist (reward (append rewards nil))
+    (if (equal (assoc-default 'type reward) "reward")
+        (progn  (insert "** ")
+                (insert (assoc-default 'text reward))
+                (org-set-tags-to (format "%d" (assoc-default 'value reward)))
+                (org-set-property "ID" (assoc-default '_id reward))))))
+
 (defun habitica-create-task (type name &optional down)
   "Send a post request to create a new user task.
 
@@ -144,14 +161,23 @@ DIRECTION is up or down, if the task is a habit."
 (defun habitica-parse-profile ()
   "Formats the user profile as a header."
   (let ((profile (assoc-default 'stats (habitica-get-profile))))
+    ;; show the difference in exp
+    (cond ((equal habitica-level (assoc-default 'lvl profile)) (message "Exp: %f" (- (assoc-default 'exp profile) habitica-exp)))
+          ((< habitica-level (assoc-default 'lvl profile)) (message "Reached level %d! Exp: %f" (assoc-default 'lvl profile) (+ (- habitica-max-exp habitica-exp) (assoc-default 'exp profile))))
+          ((> habitica-level (assoc-default 'lvl profile)) (message "Fell to level %d. Exp: %f" (assoc-default 'lvl profile) (* -1 (+ (- (assoc-default 'toNextLevel profile) (assoc-default 'exp profile)) habitica-exp)))))
+    (setq habitica-level (assoc-default 'lvl profile)) ;get level
+    (setq habitica-exp (assoc-default 'exp profile)) ;get exp
+    (setq habitica-max-exp (assoc-default 'toNextLevel profile)) ;get max experience
+    (setq habitica-hp (assoc-default 'hp profile)) ;get hp
+    (setq habitica-gold (string-to-number (format "%d" (assoc-default 'gp profile)))) ;get gold
+    (setq habitica-silver (string-to-number (format "%d" (* 100 (- (assoc-default 'gp profile) habitica-gold))))) ;get silver
     (insert "* Profile\n")
-    (insert (concat "** Level: " (format "%d" (assoc-default 'lvl profile)) "\n"))
+    (insert (concat "** Level: " (format "%d" habitica-level) "\n"))
     (insert (concat "** Class: " (assoc-default 'class profile) "\n"))
-    (insert (concat "** Health: " (format "%s" (assoc-default 'hp profile)) " / " (format "%d" (assoc-default 'maxHealth profile)) "\n"))
-    (insert (concat "** Exp: " (format "%s" (assoc-default 'exp profile)) " / " (format "%d" (assoc-default 'toNextLevel profile)) "\n"))
-    (let ((gold (format "%d" (assoc-default 'gp profile))))
-      (insert (concat "** Gold: " gold "\n"))
-      (insert (concat "** Silver: " (format "%d" (* 100 (- (assoc-default 'gp profile) (string-to-number gold)))) "\n")))))
+    (insert (concat "** Health: " (format "%s" habitica-hp) " / " (format "%d" (assoc-default 'maxHealth profile)) "\n"))
+    (insert (concat "** Exp: " (format "%s" habitica-exp) " / " (format "%d" habitica-max-exp) "\n"))
+    (insert (concat "** Gold: " (format "%d" habitica-gold) "\n"))
+    (insert (concat "** Silver: " (format "%d" habitica-silver) "\n"))))
 
 (defun habitica-refresh-profile ()
   "Kill the current profile and parse a new one."
@@ -224,6 +250,8 @@ NAME is the name of the new task to create."
     (habitica-parse-tasks habitica-data "daily")
     (insert "* To-Dos :todo:\n")
     (habitica-parse-tasks habitica-data "todo")
+    (insert "* Rewards :rewards:\n")
+    (habitica-parse-rewards habitica-data)
     )
   (org-align-all-tags)
   (org-content))
