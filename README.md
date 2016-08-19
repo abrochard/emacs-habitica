@@ -22,7 +22,7 @@ Place your cursor on the task
 ``` lisp
 C-x t n => new task
 C-x t t => cycle todo/done
-C-x t u => + a habit
-C-x t d => - a habit
+C-x t + => + a habit
+C-x t - => - a habit
 C-x t D => delete the task
 ```
