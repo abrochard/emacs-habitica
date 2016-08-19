@@ -158,13 +158,18 @@ DIRECTION is up or down, if the task is a habit."
   "Get the user's raw profile data."
   (habitica-send-request "/user" "GET" ""))
 
+(defun habitica-show-notifications (profile)
+  "Compare the new profile to the current one and display notifications.
+
+PROFILE the user stats as JSON."
+  (cond ((equal habitica-level (assoc-default 'lvl profile)) (message "Exp: %f" (- (assoc-default 'exp profile) habitica-exp)))
+        ((< habitica-level (assoc-default 'lvl profile)) (message "Reached level %d! Exp: %f" (assoc-default 'lvl profile) (+ (- habitica-max-exp habitica-exp) (assoc-default 'exp profile))))
+        ((> habitica-level (assoc-default 'lvl profile)) (message "Fell to level %d. Exp: %f" (assoc-default 'lvl profile) (* -1 (+ (- (assoc-default 'toNextLevel profile) (assoc-default 'exp profile)) habitica-exp))))))
+
 (defun habitica-parse-profile ()
   "Formats the user profile as a header."
   (let ((profile (assoc-default 'stats (habitica-get-profile))))
-    ;; show the difference in exp
-    (cond ((equal habitica-level (assoc-default 'lvl profile)) (message "Exp: %f" (- (assoc-default 'exp profile) habitica-exp)))
-          ((< habitica-level (assoc-default 'lvl profile)) (message "Reached level %d! Exp: %f" (assoc-default 'lvl profile) (+ (- habitica-max-exp habitica-exp) (assoc-default 'exp profile))))
-          ((> habitica-level (assoc-default 'lvl profile)) (message "Fell to level %d. Exp: %f" (assoc-default 'lvl profile) (* -1 (+ (- (assoc-default 'toNextLevel profile) (assoc-default 'exp profile)) habitica-exp)))))
+    (habitica-show-notifications profile) ;show the difference in exp
     (setq habitica-level (assoc-default 'lvl profile)) ;get level
     (setq habitica-exp (assoc-default 'exp profile)) ;get exp
     (setq habitica-max-exp (assoc-default 'toNextLevel profile)) ;get max experience
