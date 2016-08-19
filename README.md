@@ -8,8 +8,8 @@ Get the file.
 Set your habitica user id and token as:
 
 ``` lisp
-(defvar habitica-uid "123")
-(defvar habitica-token "456")
+(setq habitica-uid "123")
+(setq habitica-token "456")
 ```
 
 ## Usage
