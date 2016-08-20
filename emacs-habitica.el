@@ -10,6 +10,7 @@
 (require 'org)
 (require 'json)
 (require 'org-element)
+(require 'easymenu)
 
 
 (defvar habitica-base "https://habitica.com/api/v3")
@@ -18,7 +19,8 @@
 
 (defvar habitica-tags '())
 
-(defvar habitica-habit-threshold 1)
+(defvar habitica-habit-threshold 1
+  "This is the threshold used to consider a habit as done.")
 
 (defvar habitica-level 0)
 (defvar habitica-exp 0)
@@ -57,8 +59,14 @@
    "Habitica"
    '(["Create a new task" habitica-new-task habitica-mode]
      ["Mark task as todo/done" habitica-todo-task habitica-mode]
+     ["+ a habit" habitica-up-task]
+     ["- a habit" habitica-down-task]
+     ["Set deadline for todo" habitica-set-deadline]
+     ["Delete a task" habitica-delete-task]
      ["Refresh tasks" habitica-tasks t]))
   "Menu of command `habitica-mode'.")
+
+(easy-menu-add-item nil '("Tools") habitica-mode-menu-map "Habitica")
 
 (defvar habitica-mode-map
   (let ((map (make-sparse-keymap)))

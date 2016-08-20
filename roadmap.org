@@ -2,9 +2,6 @@
 
 * Features
 ** TODO show streaks
-** DONE add deadlines to todos
-   - State "DONE"       from "TODO"       [2016-08-19 ven. 20:10]
-** TODO menu showing
 ** TODO rewards integration [1/2]
    - [X] show rewards
    - [ ] buy reward
@@ -16,6 +13,10 @@
 ** TODO pets integration
 ** TODO avatar integration
 
+** DONE menu showing
+   - State "DONE"       from "TODO"       [2016-08-19 ven. 20:26]
+** DONE add deadlines to todos
+   - State "DONE"       from "TODO"       [2016-08-19 ven. 20:10]
 ** DONE task deletion
    - State "DONE"       from "TODO"       [2016-08-18 jeu. 18:42]
 
