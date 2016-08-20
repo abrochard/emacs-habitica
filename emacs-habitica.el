@@ -20,12 +20,12 @@
 
 (defvar habitica-habit-threshold 1)
 
-(defvar habitica-level nil)
-(defvar habitica-exp nil)
-(defvar habitica-max-exp nil)
-(defvar habitica-hp nil)
-(defvar habitica-gold nil)
-(defvar habitica-silver nil)
+(defvar habitica-level 0)
+(defvar habitica-exp 0)
+(defvar habitica-max-exp 0)
+(defvar habitica-hp 0)
+(defvar habitica-gold 0)
+(defvar habitica-silver 0)
 
 (defvar habitica-command-map
   (let ((map (make-sparse-keymap)))
@@ -231,6 +231,12 @@ NAME is the name of the new task to create."
            (newline)
            (habitica-insert-task (habitica-create-task (habitica-get-current-type) name))
            (org-content))))
+
+(defun habitica-set-deadline ()
+  "Set a deadline for a todo task."
+  (interactive)
+  (let ((date (replace-regexp-in-string "[a-zA-Z:.<> ]" "" (org-deadline nil))))
+    (habitica-send-request (concat "/tasks/" (org-element-property :ID (org-element-at-point))) "PUT" (concat "&date=" date))))
 
 (defun habitica-delete-task ()
   "Delete the task under the cursor."
