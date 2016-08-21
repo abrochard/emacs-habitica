@@ -11,7 +11,6 @@
    - [ ] show item drop
    - [ ] better notification system
 ** TODO pets integration
-** TODO avatar integration
 
 ** DONE menu showing
    - State "DONE"       from "TODO"       [2016-08-19 ven. 20:26]
@@ -23,3 +22,6 @@
 * Backlog
 ** TODO when +/- a habit, check threshold again
 ** TODO number rounding in profile
+
+* Up in the air
+** TODO avatar integration

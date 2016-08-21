@@ -37,6 +37,7 @@
     (define-key map "+"         #'habitica-up-task)
     (define-key map "-"         #'habitica-down-task)
     (define-key map "D"         #'habitica-delete-task)
+    (define-key map "d"         #'habitica-set-deadline)
     map)
   "Keymap of habitica interactive commands.")
 
