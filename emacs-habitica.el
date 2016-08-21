@@ -38,6 +38,7 @@
     (define-key map "-"         #'habitica-down-task)
     (define-key map "D"         #'habitica-delete-task)
     (define-key map "d"         #'habitica-set-deadline)
+    (define-key map "b"         #'habitica-buy-reward)
     map)
   "Keymap of habitica interactive commands.")
 
@@ -63,6 +64,7 @@
      ["+ a habit" habitica-up-task]
      ["- a habit" habitica-down-task]
      ["Set deadline for todo" habitica-set-deadline]
+     ["Buy reward" habitica-buy-reward]
      ["Delete a task" habitica-delete-task]
      ["Refresh tasks" habitica-tasks t]))
   "Menu of command `habitica-mode'.")
@@ -252,6 +254,12 @@ NAME is the name of the new task to create."
   (interactive)
   (habitica-send-request (concat "/tasks/" (org-element-property :ID (org-element-at-point))) "DELETE" "")
   (org-cut-subtree))
+
+(defun habitica-buy-reward ()
+  "Use the up function to buy a reward."
+  (interactive)
+  (habitica-up-task)
+  (message "Bought reward %s" (org-element-property :raw-value (org-element-at-point))))
 
 (defun habitica-tasks ()
   "Main function to summon the habitica buffer."

@@ -1,10 +1,8 @@
 #+TITLE: Roadmap
 
 * Features
+** TODO show task difficulty
 ** TODO show streaks
-** TODO rewards integration [1/2]
-   - [X] show rewards
-   - [ ] buy reward
 ** TODO notifications [2/4]
    - [X] show diff in exp
    - [X] show new level
@@ -12,6 +10,10 @@
    - [ ] better notification system
 ** TODO pets integration
 
+** DONE rewards integration [2/2]
+   - State "DONE"       from "TODO"       [2016-08-21 dim. 13:25]
+   - [X] show rewards
+   - [X] buy reward
 ** DONE menu showing
    - State "DONE"       from "TODO"       [2016-08-19 ven. 20:26]
 ** DONE add deadlines to todos
