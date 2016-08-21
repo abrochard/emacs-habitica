@@ -1,15 +1,16 @@
 #+TITLE: Roadmap
 
 * Features
-** TODO show task difficulty
 ** TODO show streaks
+** TODO order tasks properly
 ** TODO notifications [2/4]
    - [X] show diff in exp
    - [X] show new level
    - [ ] show item drop
    - [ ] better notification system
-** TODO pets integration
 
+** DONE show task difficulty
+   - State "DONE"       from "TODO"       [2016-08-21 dim. 15:26]
 ** DONE rewards integration [2/2]
    - State "DONE"       from "TODO"       [2016-08-21 dim. 13:25]
    - [X] show rewards
@@ -27,3 +28,4 @@
 
 * Up in the air
 ** TODO avatar integration
+** TODO pets integration

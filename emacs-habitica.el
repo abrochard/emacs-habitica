@@ -29,6 +29,9 @@
 (defvar habitica-gold 0)
 (defvar habitica-silver 0)
 
+(defvar habitica-difficulty '((1 . "easy") (1.5 . "medium") (2 . "hard"))
+  "Assoc list of priority/difficulty.")
+
 (defvar habitica-command-map
   (let ((map (make-sparse-keymap)))
     (define-key map "n"         #'habitica-new-task)
@@ -104,22 +107,42 @@ DATA is the form to be sent as x-www-form-urlencoded."
   "Gets all the user's tasks."
   (habitica-send-request "/tasks/user" "GET" ""))
 
-(defun habitica-insert-task (task)
-  "Format the task into org mode todo heading.
+(defun habitica-insert-todo (task)
+  "Logic to insert TODO or DONE for a task.
 
 TASK is the parsed JSON response."
   (if (equal (format "%s" (assoc-default 'type task)) "habit")
       (cond ((>= (assoc-default 'value task) habitica-habit-threshold) (insert "** DONE "))
             ((< (assoc-default 'value task) habitica-habit-threshold) (insert "** TODO ")))
     (cond         ((eq (assoc-default 'completed task) :json-false) (insert "** TODO "))
-                  ((eq (assoc-default 'completed task) t) (insert "** DONE "))))
+                  ((eq (assoc-default 'completed task) t) (insert "** DONE ")))))
+
+(defun habitica-insert-deadline (task)
+  "Insert the deadline for a particular task.
+
+TASK is the parsed JSON response."
+  (if (and (assoc-default 'date task) (< 1 (length (assoc-default 'date task))))
+      (insert (concat "   DEADLINE: <" (assoc-default 'date task) ">\n"))))
+
+(defun habitica-insert-tags (task)
+  "Insert the tags and difficulty for a particular task.
+
+TASK is the parsed JSON reponse."
+  (org-set-tags-to (append
+                    (mapcar (lambda (arg)
+                              (assoc-default (format "%s" arg) habitica-tags))
+                            (assoc-default 'tags task))
+                    (list (assoc-default (assoc-default 'priority task) habitica-difficulty)))))
+
+(defun habitica-insert-task (task)
+  "Format the task into org mode todo heading.
+
+TASK is the parsed JSON response."
+  (habitica-insert-todo task)
   (insert (assoc-default 'text task))
   (insert "\n")
-  (if (and (assoc-default 'date task) (< 1 (length (assoc-default 'date task))))
-      (insert (concat "   DEADLINE: <" (assoc-default 'date task) ">\n")))
-  (if (< 0 (length (assoc-default 'tags task)))
-      (dolist (tag (append (assoc-default 'tags task) nil))
-        (org-set-tags-to (assoc-default (format "%s" tag) habitica-tags))))
+  (habitica-insert-deadline task)
+  (habitica-insert-tags task)
   (org-set-property "ID" (assoc-default '_id task)))
 
 (defun habitica-parse-tasks (tasks type)
