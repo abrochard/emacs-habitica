@@ -24,7 +24,8 @@
 
 * Backlog
 ** TODO when +/- a habit, check threshold again
-** TODO number rounding in profile
+** DONE number rounding in profile
+   - State "DONE"       from "TODO"       [2016-08-21 dim. 15:37]
 
 * Up in the air
 ** TODO avatar integration

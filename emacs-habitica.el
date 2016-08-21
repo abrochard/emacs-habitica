@@ -196,25 +196,36 @@ DIRECTION is up or down, if the task is a habit."
   "Compare the new profile to the current one and display notifications.
 
 PROFILE the user stats as JSON."
-  (cond ((equal habitica-level (assoc-default 'lvl profile)) (message "Exp: %f" (- (assoc-default 'exp profile) habitica-exp)))
-        ((< habitica-level (assoc-default 'lvl profile)) (message "Reached level %d! Exp: %f" (assoc-default 'lvl profile) (+ (- habitica-max-exp habitica-exp) (assoc-default 'exp profile))))
-        ((> habitica-level (assoc-default 'lvl profile)) (message "Fell to level %d. Exp: %f" (assoc-default 'lvl profile) (* -1 (+ (- (assoc-default 'toNextLevel profile) (assoc-default 'exp profile)) habitica-exp))))))
+  (cond ((equal habitica-level (assoc-default 'lvl profile))
+         (message "Exp: %f" (- (assoc-default 'exp profile) habitica-exp)))
+        ((< habitica-level (assoc-default 'lvl profile))
+         (message "Reached level %d! Exp: %f" (assoc-default 'lvl profile) (+ (- habitica-max-exp habitica-exp) (assoc-default 'exp profile))))
+        ((> habitica-level (assoc-default 'lvl profile))
+         (message "Fell to level %d. Exp: %f" (assoc-default 'lvl profile)
+                  (* -1 (+ (- (assoc-default 'toNextLevel profile) (assoc-default 'exp profile)) habitica-exp))))))
+
+(defun habitica-set-profile (profile)
+  "Set the profile variables.
+
+PROFILE is the JSON formatted response."
+    (setq habitica-level (assoc-default 'lvl profile)) ;get level
+    (setq habitica-exp (fround (assoc-default 'exp profile))) ;get exp
+    (setq habitica-max-exp (assoc-default 'toNextLevel profile)) ;get max experience
+    (setq habitica-hp (fround (assoc-default 'hp profile))) ;get hp
+    (setq habitica-gold (string-to-number (format "%d" (assoc-default 'gp profile)))) ;get gold
+    (setq habitica-silver (string-to-number (format "%d" (* 100 (- (assoc-default 'gp profile) habitica-gold))))) ;get silver
+  )
 
 (defun habitica-parse-profile ()
   "Formats the user profile as a header."
   (let ((profile (assoc-default 'stats (habitica-get-profile))))
     (habitica-show-notifications profile) ;show the difference in exp
-    (setq habitica-level (assoc-default 'lvl profile)) ;get level
-    (setq habitica-exp (assoc-default 'exp profile)) ;get exp
-    (setq habitica-max-exp (assoc-default 'toNextLevel profile)) ;get max experience
-    (setq habitica-hp (assoc-default 'hp profile)) ;get hp
-    (setq habitica-gold (string-to-number (format "%d" (assoc-default 'gp profile)))) ;get gold
-    (setq habitica-silver (string-to-number (format "%d" (* 100 (- (assoc-default 'gp profile) habitica-gold))))) ;get silver
+    (habitica-set-profile profile)
     (insert "* Profile\n")
     (insert (concat "** Level: " (format "%d" habitica-level) "\n"))
     (insert (concat "** Class: " (assoc-default 'class profile) "\n"))
-    (insert (concat "** Health: " (format "%s" habitica-hp) " / " (format "%d" (assoc-default 'maxHealth profile)) "\n"))
-    (insert (concat "** Exp: " (format "%s" habitica-exp) " / " (format "%d" habitica-max-exp) "\n"))
+    (insert (concat "** Health: " (format "%d" habitica-hp) " / " (format "%d" (assoc-default 'maxHealth profile)) "\n"))
+    (insert (concat "** Exp: " (format "%d" habitica-exp) " / " (format "%d" habitica-max-exp) "\n"))
     (insert (concat "** Gold: " (format "%d" habitica-gold) "\n"))
     (insert (concat "** Silver: " (format "%d" habitica-silver) "\n"))))
 
