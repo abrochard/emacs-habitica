@@ -9,6 +9,8 @@
    - [ ] show item drop
    - [ ] better notification system
 
+** DONE set difficulty
+   - State "DONE"       from "TODO"       [2016-08-21 dim. 17:54]
 ** DONE show task difficulty
    - State "DONE"       from "TODO"       [2016-08-21 dim. 15:26]
 ** DONE rewards integration [2/2]
@@ -24,6 +26,7 @@
 
 * Backlog
 ** TODO when +/- a habit, check threshold again
+** TODO figure out menu visibility
 ** DONE number rounding in profile
    - State "DONE"       from "TODO"       [2016-08-21 dim. 15:37]
 

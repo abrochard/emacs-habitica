@@ -25,6 +25,7 @@ C-x t t => cycle todo/done
 C-x t + => + a habit
 C-x t - => - a habit
 C-x t d => set deadline
+C-x t i => set difficulty
 C-x t D => delete the task
 C-x t b => buy reward
 C-x t g => refresh

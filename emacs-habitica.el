@@ -42,6 +42,7 @@
     (define-key map "D"         #'habitica-delete-task)
     (define-key map "d"         #'habitica-set-deadline)
     (define-key map "b"         #'habitica-buy-reward)
+    (define-key map "i"         #'habitica-set-difficulty)
     map)
   "Keymap of habitica interactive commands.")
 
@@ -67,6 +68,7 @@
      ["+ a habit" habitica-up-task]
      ["- a habit" habitica-down-task]
      ["Set deadline for todo" habitica-set-deadline]
+     ["Set difficulty for task" habitica-set-difficulty]
      ["Buy reward" habitica-buy-reward]
      ["Delete a task" habitica-delete-task]
      ["Refresh tasks" habitica-tasks t]))
@@ -282,6 +284,19 @@ NAME is the name of the new task to create."
   (interactive)
   (let ((date (replace-regexp-in-string "[a-zA-Z:.<> ]" "" (org-deadline nil))))
     (habitica-send-request (concat "/tasks/" (org-element-property :ID (org-element-at-point))) "PUT" (concat "&date=" date))))
+
+(defun habitica-set-difficulty (level)
+  "Set a difficulty level for a task.
+
+LEVEL index from 1 to 3."
+  (interactive "nEnter the difficulty level, 1 (easy) 2 (medium) 3 (hard): ")
+  (let ((task (habitica-send-request (concat "/tasks/" (org-element-property :ID (org-element-at-point))) "PUT"
+                                     (concat "&priority="
+                                             (format "%s" (car (nth (- level 1) habitica-difficulty)))))))
+    (beginning-of-line)
+    (kill-line)
+    (habitica-insert-task task)
+    (org-content)))
 
 (defun habitica-delete-task ()
   "Delete the task under the cursor."
