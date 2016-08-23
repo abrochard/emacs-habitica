@@ -1,6 +1,7 @@
 #+TITLE: Roadmap
 
 * Features
+** TODO better health/exp bar
 ** TODO show streaks
 ** TODO order tasks properly
 ** TODO notifications [2/4]
