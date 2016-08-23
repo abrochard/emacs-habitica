@@ -30,3 +30,9 @@ C-x t D => delete the task
 C-x t b => buy reward
 C-x t g => refresh
 ```
+
+### Highlithing
+If you want to try highlighting tasks based on their value
+``` lisp
+(setq habitica-turn-on-highlighting t)
+```

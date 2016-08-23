@@ -22,6 +22,10 @@
 (defvar habitica-habit-threshold 1
   "This is the threshold used to consider a habit as done.")
 
+(defvar habitica-turn-on-highlighting nil)
+(defvar habitica-color-threshold
+  '(("hi-red-b" . -10) ("hi-yellow" . 0) ("hi-green" . 5) ("hi-blue" . 10)))
+
 (defvar habitica-level 0)
 (defvar habitica-exp 0)
 (defvar habitica-max-exp 0)
@@ -136,6 +140,16 @@ TASK is the parsed JSON reponse."
                             (assoc-default 'tags task))
                     (list (assoc-default (assoc-default 'priority task) habitica-difficulty)))))
 
+(defun habitica-highlight-task (task)
+  "Highlight the task using its value and user defined thresholds.
+
+TASK is the parsed JSON reponse."
+  (dolist (value habitica-color-threshold)
+    (if (<= (assoc-default 'value task) (cdr value))
+        (progn (highlight-regexp (assoc-default 'text task) (car value))
+               (throw 'aaa nil))))
+  (highlight-regexp (assoc-default 'text task) (car (car (last habitica-color-threshold)))))
+
 (defun habitica-insert-task (task)
   "Format the task into org mode todo heading.
 
@@ -145,7 +159,12 @@ TASK is the parsed JSON response."
   (insert "\n")
   (habitica-insert-deadline task)
   (habitica-insert-tags task)
-  (org-set-property "ID" (assoc-default '_id task)))
+  (org-set-property "ID" (assoc-default '_id task))
+  (if habitica-turn-on-highlighting
+      (catch 'aaa
+        (habitica-highlight-task task))
+      )
+  )
 
 (defun habitica-parse-tasks (tasks type)
   "Parse the tasks to 'org-mode' format.

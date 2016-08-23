@@ -9,6 +9,8 @@
    - [ ] show item drop
    - [ ] better notification system
 
+** DONE incorporate highlighting
+   - State "DONE"       from "TODO"       [2016-08-22 lun. 19:58]
 ** DONE set difficulty
    - State "DONE"       from "TODO"       [2016-08-21 dim. 17:54]
 ** DONE show task difficulty
