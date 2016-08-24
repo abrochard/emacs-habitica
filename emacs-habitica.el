@@ -34,6 +34,8 @@
 (defvar habitica-gold 0)
 (defvar habitica-silver 0)
 
+(defvar habitica-status-bar-length 20)
+
 (defvar habitica-difficulty '((1 . "easy") (1.5 . "medium") (2 . "hard"))
   "Assoc list of priority/difficulty.")
 
@@ -237,7 +239,18 @@ PROFILE is the JSON formatted response."
     (setq habitica-max-hp (assoc-default 'maxHealth profile)) ;get hp
     (setq habitica-gold (string-to-number (format "%d" (assoc-default 'gp profile)))) ;get gold
     (setq habitica-silver (string-to-number (format "%d" (* 100 (- (assoc-default 'gp profile) habitica-gold))))) ;get silver
-  )
+    )
+
+(defun habitica-format-status-bar (current max length)
+  "Formats the current value as an ASCII progress bar.
+
+CURRENT is the current value
+MAX is the max value
+LENGTH is the total number of characters in the bar."
+  (concat "["
+          (make-string (truncate (fround (* (/ current max) length))) ?#)
+          (make-string (truncate (fround (* (/ (- max current) max) length))) ?-)
+          "]"))
 
 (defun habitica-parse-profile ()
   "Formats the user profile as a header."
@@ -245,12 +258,18 @@ PROFILE is the JSON formatted response."
     (habitica-show-notifications profile) ;show the difference in exp
     (habitica-set-profile profile)
     (insert "* Profile\n")
-    (insert (concat "** Level: " (format "%d" habitica-level) "\n"))
-    (insert (concat "** Class: " (assoc-default 'class profile) "\n"))
-    (insert (concat "** Health: " (format "%d" habitica-hp) " / " (format "%d" habitica-max-hp) "\n"))
-    (insert (concat "** Exp: " (format "%d" habitica-exp) " / " (format "%d" habitica-max-exp) "\n"))
-    (insert (concat "** Gold: " (format "%d" habitica-gold) "\n"))
-    (insert (concat "** Silver: " (format "%d" habitica-silver) "\n"))))
+    (insert (concat "** Level  : " (format "%d" habitica-level) "\n"))
+    (insert (concat "** Class  : " (assoc-default 'class profile) "\n"))
+    (insert (concat "** Health : "
+                    (habitica-format-status-bar habitica-hp habitica-max-hp habitica-status-bar-length)
+                    "  "
+                    (format "%d" habitica-hp) " / " (format "%d" habitica-max-hp) "\n"))
+    (insert (concat "** Exp    : "
+                    (habitica-format-status-bar habitica-exp habitica-max-exp habitica-status-bar-length)
+                    "  "
+                    (format "%d" habitica-exp) " / " (format "%d" habitica-max-exp) "\n"))
+    (insert (concat "** Gold   : " (format "%d" habitica-gold) "\n"))
+    (insert (concat "** Silver : " (format "%d" habitica-silver) "\n"))))
 
 (defun habitica-refresh-profile ()
   "Kill the current profile and parse a new one."

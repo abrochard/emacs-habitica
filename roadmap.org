@@ -1,7 +1,6 @@
 #+TITLE: Roadmap
 
 * Features
-** TODO better health/exp bar
 ** TODO show streaks
 ** TODO order tasks properly
 ** TODO notifications [2/4]
@@ -10,6 +9,8 @@
    - [ ] show item drop
    - [ ] better notification system
 
+** DONE better health/exp bar
+   - State "DONE"       from "TODO"       [2016-08-23 mar. 20:51]
 ** DONE incorporate highlighting
    - State "DONE"       from "TODO"       [2016-08-22 lun. 19:58]
 ** DONE set difficulty
