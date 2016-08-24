@@ -26,6 +26,8 @@
 (defvar habitica-color-threshold
   '(("hi-red-b" . -10) ("hi-yellow" . 0) ("hi-green" . 5) ("hi-blue" . 10)))
 
+(defvar habitica-show-streak nil)
+
 (defvar habitica-level 0)
 (defvar habitica-exp 0)
 (defvar habitica-max-exp 0)
@@ -141,7 +143,16 @@ TASK is the parsed JSON reponse."
                     (mapcar (lambda (arg)
                               (assoc-default (format "%s" arg) habitica-tags))
                             (assoc-default 'tags task))
-                    (list (assoc-default (assoc-default 'priority task) habitica-difficulty)))))
+                    (list (assoc-default (assoc-default 'priority task) habitica-difficulty))
+                    (habitica-get-streak-as-list task))))
+
+(defun habitica-get-streak-as-list (task)
+  "Get the streak formated as a single element list.
+
+TASK is the parsed JSON reponse."
+  (if (and habitica-show-streak (assoc-default 'streak task) (< 0 (assoc-default 'streak task)))
+      (list (format "%s" (assoc-default 'streak task)))
+    '()))
 
 (defun habitica-highlight-task (task)
   "Highlight the task using its value and user defined thresholds.

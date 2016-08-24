@@ -36,3 +36,10 @@ If you want to try highlighting tasks based on their value
 ``` lisp
 (setq habitica-turn-on-highlighting t)
 ```
+This is very experimental.
+
+### Streak count
+If you want the streak count to appear as a tag for your daily tasks
+``` lisp
+(setq habitica-show-streak t)
+```
