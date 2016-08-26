@@ -1,11 +1,51 @@
-;;; package --- Summary
+;;; habitica.el --- Interface for habitica.com
+
+;; Copyright (C) 2016, Adrien Brochard
+
+;; This file is NOT part of Emacs.
+
+;; This  program is  free  software; you  can  redistribute it  and/or
+;; modify it  under the  terms of  the GNU  General Public  License as
+;; published by the Free Software  Foundation; either version 2 of the
+;; License, or (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful, but
+;; WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
+;; MERCHANTABILITY or FITNESS  FOR A PARTICULAR PURPOSE.   See the GNU
+;; General Public License for more details.
+
+;; You should have  received a copy of the GNU  General Public License
+;; along  with  this program;  if  not,  write  to the  Free  Software
+;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+;; USA
+
+;; Version: 0.05
+;; Author: Adrien Brochard
+;; Keywords: habitica todo
+;; URL: https://github.com/abrochard/emacs-habitica
+;; License: GNU General Public License >= 3
 
 ;;; Commentary:
 ;; Soon
 
+;;; Install:
+;; Soon
+
+;;; Customize:
+;; Soon
 
 ;;; Code:
 
+;;;; Consts
+(defconst habitica-version "0.05" "Habitica version.")
+
+(defgroup habitica nil
+  "Interface for habitica.com, a RPG based task management system."
+  :group 'extensions
+  :group 'tools
+  :link '(url-link :tag "Repository" "https://github.com/abrochard/emacs-habitica"))
+
+;;;; libraries
 (require 'cl-lib)
 (require 'org)
 (require 'json)
@@ -13,9 +53,10 @@
 (require 'easymenu)
 
 
+;;;; Variables
 (defvar habitica-base "https://habitica.com/api/v3")
-(defvar habitica-uid "123") ;; replace with correct user id
-(defvar habitica-token "456") ;; replace with correct token
+(defvar habitica-uid "") ;; replace with correct user id
+(defvar habitica-token "") ;; replace with correct token
 
 (defvar habitica-tags '())
 
@@ -99,6 +140,9 @@
   :lighter " Habitica"
   :keymap habitica-mode-map)
 
+
+;;; Function
+;;;; Utilities
 (defun habitica-send-request (endpoint type data)
   "Base function to send request to the Habitica API.
 
@@ -295,6 +339,8 @@ LENGTH is the total number of characters in the bar."
   (dolist (value (append (habitica-send-request "/tags" "GET" "") nil))
     (setq habitica-tags (cl-acons (assoc-default 'id value) (assoc-default 'name value) habitica-tags))))
 
+
+;;;; Interactive
 (defun habitica-up-task ()
   "Up or complete a task."
   (interactive)
@@ -385,4 +431,4 @@ LEVEL index from 1 to 3."
   (org-content))
 
 (provide 'habitica)
-;;; emacs-habitica.el ends here
+;;; habitica.el ends here
