@@ -24,11 +24,14 @@
 ;; Keywords: habitica todo
 ;; URL: https://github.com/abrochard/emacs-habitica
 ;; License: GNU General Public License >= 3
+;; Package-Requires: ((org "8.3.5") (emacs "24.3"))
 
 ;;; Commentary:
+
 ;; Emacs extension for [Habitica](https://habitica.com/), a RPG style habit tracker and todo list.
 
 ;;; Install:
+
 ;; Load this file and set your habitica user id and token as:
 ;;
 ;; (setq habitica-uid "123")
@@ -36,11 +39,13 @@
 ;;
 ;; You can find your uid and token by following the instructions [here](http://habitica.wikia.com/wiki/API_Options).
 
-;;; Usage
+;;; Usage:
+
 ;; To see your tasks, call
 ;; M-x habitica-task
 
-;;; Shortcuts
+;;; Shortcuts:
+
 ;; C-x t n => new task
 ;; C-x t t => cycle todo/done
 ;; C-x t + => + a habit
@@ -52,6 +57,7 @@
 ;; C-x t g => refresh
 
 ;;; Customize:
+
 ;; You can turn on the experimental highlighting with
 ;; (setq habitica-turn-on-highlighting t)
 
@@ -71,10 +77,10 @@
 
 ;;;; libraries
 (require 'cl-lib)
-(require 'org)
-(require 'json)
-(require 'org-element)
 (require 'easymenu)
+(require 'json)
+(require 'org)
+(require 'org-element)
 
 
 ;;;; Variables
