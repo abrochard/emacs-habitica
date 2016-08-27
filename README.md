@@ -3,7 +3,7 @@ Emacs extension for [Habitica](https://habitica.com/), a RPG style habit tracker
 
 
 ## Installation
-Load the file [habitica.el](../habitica.el) and set your habitica user id and token as:
+Load the file [habitica.el](../master/habitica.el) and set your habitica user id and token as:
 ``` lisp
 (setq habitica-uid "123")
 (setq habitica-token "456")
