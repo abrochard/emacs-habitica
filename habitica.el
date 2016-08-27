@@ -453,7 +453,6 @@ LEVEL index from 1 to 3."
   (org-content))
 
 ;;;###autoload
-
 (define-minor-mode habitica-mode
   "Mode to edit and manage your Habitica tasks"
   :lighter " Habitica"
