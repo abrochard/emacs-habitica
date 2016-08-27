@@ -163,14 +163,6 @@
     map)
   "Keymap of command `habitica-mode'.")
 
-;;; autoload
-
-(define-minor-mode habitica-mode
-  "Mode to edit and manage your Habitica tasks"
-  :lighter " Habitica"
-  :keymap habitica-mode-map)
-
-
 ;;; Function
 ;;;; Utilities
 (defun habitica-send-request (endpoint type data)
@@ -459,6 +451,13 @@ LEVEL index from 1 to 3."
     )
   (org-align-all-tags)
   (org-content))
+
+;;;###autoload
+
+(define-minor-mode habitica-mode
+  "Mode to edit and manage your Habitica tasks"
+  :lighter " Habitica"
+  :keymap habitica-mode-map)
 
 (provide 'habitica)
 ;;; habitica.el ends here
