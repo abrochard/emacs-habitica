@@ -26,13 +26,37 @@
 ;; License: GNU General Public License >= 3
 
 ;;; Commentary:
-;; Soon
+;; Emacs extension for [Habitica](https://habitica.com/), a RPG style habit tracker and todo list.
 
 ;;; Install:
-;; Soon
+;; Load this file and set your habitica user id and token as:
+;;
+;; (setq habitica-uid "123")
+;; (setq habitica-token "456")
+;;
+;; You can find your uid and token by following the instructions [here](http://habitica.wikia.com/wiki/API_Options).
+
+;;; Usage
+;; To see your tasks, call
+;; M-x habitica-task
+
+;;; Shortcuts
+;; C-x t n => new task
+;; C-x t t => cycle todo/done
+;; C-x t + => + a habit
+;; C-x t - => - a habit
+;; C-x t d => set deadline
+;; C-x t i => set difficulty
+;; C-x t D => delete the task
+;; C-x t b => buy reward
+;; C-x t g => refresh
 
 ;;; Customize:
-;; Soon
+;; You can turn on the experimental highlighting with
+;; (setq habitica-turn-on-highlighting t)
+
+;; If you want the streak count to appear as a tag for your daily tasks
+;; (setq habitica-show-streak t)
 
 ;;; Code:
 

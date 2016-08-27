@@ -1,7 +1,6 @@
 #+TITLE: Roadmap
 
 * Features
-** TODO proper readme and doc
 ** TODO order tasks properly
 ** TODO notifications [2/4]
    - [X] show diff in exp
@@ -9,6 +8,8 @@
    - [ ] show item drop
    - [ ] better notification system
 
+** DONE proper readme and doc
+   - State "DONE"       from "TODO"       [2016-08-26 ven. 20:59]
 ** DONE show streaks
    - State "DONE"       from "TODO"       [2016-08-24 mer. 19:53]
 ** DONE better health/exp bar

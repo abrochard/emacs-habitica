@@ -1,23 +1,22 @@
 # emacs-habitica
-Emacs Extension for Habitica
-[[https://habitica.com/]]
+Emacs extension for [Habitica](https://habitica.com/), a RPG style habit tracker and todo list.
 
 
 ## Installation
-Get the file.
-Set your habitica user id and token as:
-
+Load the file [habitica.el](../habitica.el) and set your habitica user id and token as:
 ``` lisp
 (setq habitica-uid "123")
 (setq habitica-token "456")
 ```
+You can find your uid and token by following the instructions [here](http://habitica.wikia.com/wiki/API_Options).
 
 ## Usage
 To see your tasks, call
 ``` lisp
-habitica-tasks
+M-x habitica-tasks
 ```
-### Shortcuts
+
+## Shortcuts
 Place your cursor on the task
 ``` lisp
 C-x t n => new task
@@ -31,6 +30,7 @@ C-x t b => buy reward
 C-x t g => refresh
 ```
 
+## Customize
 ### Highlithing
 If you want to try highlighting tasks based on their value
 ``` lisp
