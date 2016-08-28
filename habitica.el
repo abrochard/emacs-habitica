@@ -178,7 +178,9 @@ DATA is the form to be sent as x-www-form-urlencoded."
     (with-current-buffer (url-retrieve-synchronously url)
       (goto-char (point-min))
       (delete-region (point-min) (string-match-p "{" (buffer-string)))
-      (assoc-default 'data (json-read-from-string (buffer-string))))))
+      (assoc-default 'data (json-read-from-string (decode-coding-string
+                                                   (buffer-string)
+                                                   'utf-8))))))
 
 (defun habitica-get-tasks ()
   "Gets all the user's tasks."
@@ -429,6 +431,7 @@ LEVEL index from 1 to 3."
   (habitica-up-task)
   (message "Bought reward %s" (org-element-property :raw-value (org-element-at-point))))
 
+;;;###autoload
 (defun habitica-tasks ()
   "Main function to summon the habitica buffer."
   (interactive)
@@ -452,7 +455,6 @@ LEVEL index from 1 to 3."
   (org-align-all-tags)
   (org-content))
 
-;;;###autoload
 (define-minor-mode habitica-mode
   "Mode to edit and manage your Habitica tasks"
   :lighter " Habitica"
