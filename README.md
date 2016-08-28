@@ -3,7 +3,13 @@ Emacs extension for [Habitica](https://habitica.com/), a RPG style habit tracker
 
 
 ## Installation
-Load the file [habitica.el](../master/habitica.el) and set your habitica user id and token as:
+Install from MELPA with
+``` lisp
+M-x package-install habitica
+```
+or the file [habitica.el](../master/habitica.el).
+
+In both cases, you have to set your habitica user id and token as:
 ``` lisp
 (setq habitica-uid "123")
 (setq habitica-token "456")
