@@ -178,7 +178,9 @@ DATA is the form to be sent as x-www-form-urlencoded."
     (with-current-buffer (url-retrieve-synchronously url)
       (goto-char (point-min))
       (delete-region (point-min) (string-match-p "{" (buffer-string)))
-      (assoc-default 'data (json-read-from-string (buffer-string))))))
+      (assoc-default 'data (json-read-from-string (decode-coding-string
+                                                   (buffer-string)
+                                                   'utf-8))))))
 
 (defun habitica-get-tasks ()
   "Gets all the user's tasks."
