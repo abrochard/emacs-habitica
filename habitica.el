@@ -429,6 +429,7 @@ LEVEL index from 1 to 3."
   (habitica-up-task)
   (message "Bought reward %s" (org-element-property :raw-value (org-element-at-point))))
 
+;;;###autoload
 (defun habitica-tasks ()
   "Main function to summon the habitica buffer."
   (interactive)
@@ -452,7 +453,6 @@ LEVEL index from 1 to 3."
   (org-align-all-tags)
   (org-content))
 
-;;;###autoload
 (define-minor-mode habitica-mode
   "Mode to edit and manage your Habitica tasks"
   :lighter " Habitica"
