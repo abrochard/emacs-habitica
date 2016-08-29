@@ -1,13 +1,15 @@
 # emacs-habitica
 Emacs extension for [Habitica](https://habitica.com/), a RPG style habit tracker and todo list.
 
+[![MELPA](https://melpa.org/packages/habitica-badge.svg)](https://melpa.org/#/habitica)
+
 
 ## Installation
 Install from MELPA with
 ``` lisp
 M-x package-install habitica
 ```
-or the file [habitica.el](../master/habitica.el).
+or load the file [habitica.el](../master/habitica.el).
 
 In both cases, you have to set your habitica user id and token as:
 ``` lisp
