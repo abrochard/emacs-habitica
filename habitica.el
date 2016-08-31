@@ -242,6 +242,7 @@ TASK is the parsed JSON response."
   (habitica-insert-deadline task)
   (habitica-insert-tags task)
   (org-set-property "ID" (assoc-default '_id task))
+  (org-set-property "value" (format "%s" (assoc-default 'value task)))
   (if habitica-turn-on-highlighting
       (catch 'aaa
         (habitica-highlight-task task))
