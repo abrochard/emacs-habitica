@@ -34,6 +34,7 @@
 * Backlog
 ** TODO when +/- a habit, check threshold again
 ** TODO figure out menu visibility
+** TODO when you +/- a task, use response to update profile instead of making another request
 ** DONE number rounding in profile
    - State "DONE"       from "TODO"       [2016-08-21 dim. 15:37]
 
