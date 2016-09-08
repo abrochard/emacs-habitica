@@ -369,13 +369,21 @@ LENGTH is the total number of characters in the bar."
 (defun habitica-up-task ()
   "Up or complete a task."
   (interactive)
-  (habitica-score-task (org-element-property :ID (org-element-at-point)) "up")
+  (let ((result (habitica-score-task (org-element-property :ID (org-element-at-point)) "up"))
+        (current-value (string-to-number (org-element-property :VALUE (org-element-at-point)))))
+    (if (< habitica-habit-threshold (+ current-value (assoc-default 'delta result)))
+        (org-todo "DONE"))
+    (org-set-property "value" (number-to-string (+ current-value (assoc-default 'delta result)))))
   (habitica-refresh-profile))
 
 (defun habitica-down-task ()
   "Down or - a task."
   (interactive)
-  (habitica-score-task (org-element-property :ID (org-element-at-point)) "down")
+  (let ((result (habitica-score-task (org-element-property :ID (org-element-at-point)) "down"))
+        (current-value (string-to-number (org-element-property :VALUE (org-element-at-point)))))
+    (if (> habitica-habit-threshold (+ current-value (assoc-default 'delta result)))
+        (org-todo "TODO"))
+    (org-set-property "value" (number-to-string (+ current-value (assoc-default 'delta result)))))
   (habitica-refresh-profile))
 
 (defun habitica-todo-task ()
