@@ -32,10 +32,11 @@
    - State "DONE"       from "TODO"       [2016-08-18 jeu. 18:42]
 
 * Backlog
-** TODO when +/- a habit, check threshold again
 ** TODO figure out menu visibility
 ** TODO when you +/- a task, use response to update profile instead of making another request
 ** TODO update streak count on todo cycle
+** DONE when +/- a habit, check threshold again
+   - State "DONE"       from "TODO"       [2016-09-07 mer. 22:22]
 ** DONE number rounding in profile
    - State "DONE"       from "TODO"       [2016-08-21 dim. 15:37]
 
