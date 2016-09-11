@@ -249,14 +249,15 @@ TASK is the parsed JSON response."
       )
   )
 
-(defun habitica-parse-tasks (tasks type)
+(defun habitica-parse-tasks (tasks order)
   "Parse the tasks to 'org-mode' format.
 
 TASKS is the list of tasks from the JSON response
-TYPE is the type of task that you want to parse (habit, daily, or todo)."
-  (dolist (value (append tasks nil))
-    (if (equal (assoc-default 'type value) type)
-        (habitica-insert-task value))))
+ORDER is the ordered list of ids to print the task in."
+  (dolist (id (append order nil))
+    (dolist (value (append tasks nil))
+      (if (equal (assoc-default 'id value) id)
+          (habitica-insert-task value)))))
 
 (defun habitica-parse-rewards (rewards)
   "Parse the rewards to 'org-mode' format.
@@ -332,14 +333,16 @@ LENGTH is the total number of characters in the bar."
           (make-string (truncate (fround (* (/ (- max current) max) length))) ?-)
           "]"))
 
-(defun habitica-parse-profile ()
-  "Formats the user profile as a header."
-  (let ((profile (assoc-default 'stats (habitica-get-profile))))
-    (habitica-show-notifications profile) ;show the difference in exp
-    (habitica-set-profile profile)
-    (insert "* Profile\n")
+(defun habitica-parse-profile (profile)
+  "Formats the user stats as a header.
+
+PROFILE is the JSON profile data"
+  (let ((stats (assoc-default 'stats profile)))
+    (habitica-show-notifications stats) ;show the difference in exp
+    (habitica-set-profile stats)
+    (insert "* Stats\n")
     (insert (concat "** Level  : " (format "%d" habitica-level) "\n"))
-    (insert (concat "** Class  : " (assoc-default 'class profile) "\n"))
+    (insert (concat "** Class  : " (assoc-default 'class stats) "\n"))
     (insert (concat "** Health : "
                     (habitica-format-status-bar habitica-hp habitica-max-hp habitica-status-bar-length)
                     "  "
@@ -356,7 +359,7 @@ LENGTH is the total number of characters in the bar."
   (save-excursion
     (progn (re-search-backward "^\* Profile" (point-min) t)
            (org-cut-subtree)
-           (habitica-parse-profile))))
+           (habitica-parse-profile (habitica-get-profile)))))
 
 (defun habitica-get-tags ()
   "Get the dictionary id/tags."
@@ -450,17 +453,21 @@ LEVEL index from 1 to 3."
   (habitica-mode)
   (insert "#+TITLE: Habitica Dashboard\n\n")
   (habitica-get-tags)
-  (habitica-parse-profile)
-  (let ((habitica-data (habitica-get-tasks)))
-    (insert "* Habits :habit:\n")
-    (habitica-parse-tasks habitica-data "habit")
-    (insert "* Daily Tasks :daily:\n")
-    (habitica-parse-tasks habitica-data "daily")
-    (insert "* To-Dos :todo:\n")
-    (habitica-parse-tasks habitica-data "todo")
-    (insert "* Rewards :rewards:\n")
-    (habitica-parse-rewards habitica-data)
-    )
+  (let ((habitica-data (habitica-get-tasks))
+        (habitica-profile (habitica-get-profile)))
+    (habitica-parse-profile habitica-profile)
+    (let ((tasksOrder (assoc-default 'tasksOrder habitica-profile)))
+      (insert "* Habits :habit:\n")
+      (habitica-parse-tasks habitica-data
+                            (assoc-default 'habits tasksOrder))
+      (insert "* Daily Tasks :daily:\n")
+      (habitica-parse-tasks habitica-data
+                            (assoc-default 'dailys tasksOrder))
+      (insert "* To-Dos :todo:\n")
+      (habitica-parse-tasks habitica-data
+                            (assoc-default 'todos tasksOrder))
+      (insert "* Rewards :rewards:\n")
+      (habitica-parse-rewards habitica-data)))
   (org-align-all-tags)
   (org-content))
 
