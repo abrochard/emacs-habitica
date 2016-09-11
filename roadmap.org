@@ -1,13 +1,14 @@
 #+TITLE: Roadmap
 
 * Features
-** TODO show mana
 ** TODO notifications [2/4]
    - [X] show diff in exp
    - [X] show new level
    - [ ] show item drop
    - [ ] better notification system
 
+** DONE show mana
+   - State "DONE"       from "TODO"       [2016-09-10 sam. 23:33]
 ** DONE order tasks properly
    - State "DONE"       from "TODO"       [2016-09-10 sam. 23:25]
 ** DONE proper readme and doc

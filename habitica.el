@@ -104,6 +104,8 @@
 (defvar habitica-max-exp 0)
 (defvar habitica-hp 0)
 (defvar habitica-max-hp 0)
+(defvar habitica-mp 0)
+(defvar habitica-max-mp 0)
 (defvar habitica-gold 0)
 (defvar habitica-silver 0)
 
@@ -317,7 +319,9 @@ PROFILE is the JSON formatted response."
     (setq habitica-exp (fround (assoc-default 'exp profile))) ;get exp
     (setq habitica-max-exp (assoc-default 'toNextLevel profile)) ;get max experience
     (setq habitica-hp (fround (assoc-default 'hp profile))) ;get hp
-    (setq habitica-max-hp (assoc-default 'maxHealth profile)) ;get hp
+    (setq habitica-max-hp (assoc-default 'maxHealth profile)) ;get max hp
+    (setq habitica-mp (fround (assoc-default 'mp profile))) ;get mp
+    (setq habitica-max-mp (assoc-default 'maxMP profile)) ;get max mp
     (setq habitica-gold (string-to-number (format "%d" (assoc-default 'gp profile)))) ;get gold
     (setq habitica-silver (string-to-number (format "%d" (* 100 (- (assoc-default 'gp profile) habitica-gold))))) ;get silver
     )
@@ -351,6 +355,11 @@ PROFILE is the JSON profile data"
                     (habitica-format-status-bar habitica-exp habitica-max-exp habitica-status-bar-length)
                     "  "
                     (format "%d" habitica-exp) " / " (format "%d" habitica-max-exp) "\n"))
+    (if (<= 10 habitica-level)
+        (insert (concat "** Mana   : "
+                        (habitica-format-status-bar habitica-mp habitica-max-mp habitica-status-bar-length)
+                        "  "
+                        (format "%d" habitica-mp) " / " (format "%d" habitica-max-mp) "\n")))
     (insert (concat "** Gold   : " (format "%d" habitica-gold) "\n"))
     (insert (concat "** Silver : " (format "%d" habitica-silver) "\n"))))
 
