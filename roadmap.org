@@ -1,6 +1,7 @@
 #+TITLE: Roadmap
 
 * Features
+** TODO create, update, delete tags
 ** TODO notifications [2/4]
    - [X] show diff in exp
    - [X] show new level
