@@ -1,13 +1,16 @@
 #+TITLE: Roadmap
 
 * Features
-** TODO order tasks properly
 ** TODO notifications [2/4]
    - [X] show diff in exp
    - [X] show new level
    - [ ] show item drop
    - [ ] better notification system
 
+** DONE show mana
+   - State "DONE"       from "TODO"       [2016-09-10 sam. 23:33]
+** DONE order tasks properly
+   - State "DONE"       from "TODO"       [2016-09-10 sam. 23:25]
 ** DONE proper readme and doc
    - State "DONE"       from "TODO"       [2016-08-26 ven. 20:59]
 ** DONE show streaks
@@ -35,6 +38,7 @@
 ** TODO figure out menu visibility
 ** TODO when you +/- a task, use response to update profile instead of making another request
 ** TODO update streak count on todo cycle
+
 ** DONE when +/- a habit, check threshold again
    - State "DONE"       from "TODO"       [2016-09-07 mer. 22:22]
 ** DONE number rounding in profile
