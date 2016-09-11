@@ -228,7 +228,13 @@ TASK is the parsed JSON reponse."
   "Update the streak count for a task.
 
 INCREMENT is what to add to the streak count."
-  (message "adrien"))
+  (let ((new-tags '()))
+    (dolist (tag (org-get-tags))
+      (message "%s" new-tags)
+      (if (string-match-p "[0-9]+" tag)
+          (setq new-tags (push (format "%s" (+ increment (string-to-number tag))) new-tags))
+        (setq new-tags (push tag new-tags))))
+    (org-set-tags-to new-tags)))
 
 (defun habitica--highlight-task (task)
   "Highlight the task using its value and user defined thresholds.
@@ -374,7 +380,7 @@ PROFILE is the JSON profile data"
 (defun habitica--refresh-profile ()
   "Kill the current profile and parse a new one."
   (save-excursion
-    (progn (re-search-backward "^\* Profile" (point-min) t)
+    (progn (re-search-backward "^\* Stats" (point-min) t)
            (org-cut-subtree)
            (habitica--parse-profile (habitica--get-profile)))))
 
@@ -413,8 +419,12 @@ PROFILE is the JSON profile data"
       (message "You must be inside the habitica buffer")
     (if (equal (format "%s" (org-element-property :todo-type (org-element-at-point))) "todo")
         (progn (habitica-up-task)
+               (if habitica-show-streak
+                   (habitica--update-streak 1))
                (org-todo "DONE"))
       (progn (habitica-down-task)
+             (if habitica-show-streak
+                 (habitica--update-streak -1))
              (org-todo "TODO")))))
 
 (defun habitica-new-task (name)
