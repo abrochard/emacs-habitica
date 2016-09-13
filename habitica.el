@@ -19,7 +19,7 @@
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 ;; USA
 
-;; Version: 0.05
+;; Version: 1.0
 ;; Author: Adrien Brochard
 ;; Keywords: habitica todo
 ;; URL: https://github.com/abrochard/emacs-habitica
@@ -32,20 +32,25 @@
 
 ;;; Install:
 
-;; Load this file and set your habitica user id and token as:
+;; Install from MELPA with
 ;;
-;; (setq habitica-uid "123")
-;; (setq habitica-token "456")
+;; M-x package-install habitica
 ;;
-;; You can find your uid and token by following the instructions [here](http://habitica.wikia.com/wiki/API_Options).
+;; or load the present file.
 
 ;;; Usage:
 
 ;; To see your tasks, call
-;; M-x habitica-task
+;;
+;; M-x habitica-tasks
+;;
+;; On your first use, the extension will prompt your for your username and password.
+;; These are used to query your user id and api token from the service.
 
 ;;; Shortcuts:
 
+;; Place your cursor on the task
+;;
 ;; C-x t n => new task
 ;; C-x t t => cycle todo/done
 ;; C-x t + => + a habit
@@ -55,19 +60,35 @@
 ;; C-x t D => delete the task
 ;; C-x t b => buy reward
 ;; C-x t g => refresh
+;;
 
 ;;; Customize:
 
-;; You can turn on the experimental highlighting with
-;; (setq habitica-turn-on-highlighting t)
+;; Auto login
+;; If you restart Emacs often, or if you just don't like entering your username or password, it is possible to bypass it by setting your user id and token directly:
+;;
+;; (setq habitica-uid "123")
+;; (setq habitica-token "456")
+;;
+;; You can find your uid and token by following the instructions [here](http://habitica.wikia.com/wiki/API_Options).
 
+;; Highlithing
+;; If you want to try highlighting tasks based on their value
+;;
+;; (setq habitica-turn-on-highlighting t)
+;;
+;; This is very experimental.
+
+;; Streak count
 ;; If you want the streak count to appear as a tag for your daily tasks
+;;
 ;; (setq habitica-show-streak t)
+;;
 
 ;;; Code:
 
 ;;;; Consts
-(defconst habitica-version "0.05" "Habitica version.")
+(defconst habitica-version "1.0" "Habitica version.")
 
 (defgroup habitica nil
   "Interface for habitica.com, a RPG based task management system."
@@ -85,8 +106,8 @@
 
 ;;;; Variables
 (defvar habitica-base "https://habitica.com/api/v3")
-(defvar habitica-uid "") ;; replace with correct user id
-(defvar habitica-token "") ;; replace with correct token
+(defvar habitica-uid "")
+(defvar habitica-token "")
 
 (defvar habitica-tags '())
 
@@ -470,10 +491,36 @@ LEVEL index from 1 to 3."
   (habitica-up-task)
   (message "Bought reward %s" (org-element-property :raw-value (org-element-at-point))))
 
+(defun habitica-login (username)
+  "Login and retrives the user id and api token.
+
+USERNAME is the user's username."
+  (interactive "sEnter your Habitica username: ")
+  (setq habitica-uid nil)
+  (setq habitica-token nil)
+  (let ((password (read-passwd "Enter your password: ")))
+    (let ((url "https://habitica.com/api/v3/user/auth/local/login")
+          (url-request-method "POST")
+          (url-request-extra-headers `(("Content-Type" . "application/x-www-form-urlencoded")))
+          (url-request-data (concat "username=" username "&password=" password))
+          (data nil))
+      (with-current-buffer (url-retrieve-synchronously url)
+        (goto-char (point-min))
+        (delete-region (point-min) (string-match-p "{" (buffer-string)))
+        (setq data (assoc-default 'data
+                                  (json-read-from-string (decode-coding-string (buffer-string) 'utf-8))))
+        (setq habitica-uid (assoc-default 'id data))
+        (setq habitica-token (assoc-default 'apiToken data)))))
+  (if (and habitica-uid habitica-token)
+      (message "Successfully logged in.")
+    (message "Error logging in.")))
+
 ;;;###autoload
 (defun habitica-tasks ()
   "Main function to summon the habitica buffer."
   (interactive)
+  (if (or (not habitica-uid) (not habitica-token))
+      (call-interactively 'habitica-login))
   (switch-to-buffer "*habitica*")
   (delete-region (point-min) (point-max))
   (org-mode)
