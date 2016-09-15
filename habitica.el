@@ -106,8 +106,8 @@
 
 ;;;; Variables
 (defvar habitica-base "https://habitica.com/api/v3")
-(defvar habitica-uid "")
-(defvar habitica-token "")
+(defvar habitica-uid nil)
+(defvar habitica-token nil)
 
 (defvar habitica-tags '())
 
