@@ -11,18 +11,13 @@ M-x package-install habitica
 ```
 or load the file [habitica.el](../master/habitica.el).
 
-In both cases, you have to set your habitica user id and token as:
-``` lisp
-(setq habitica-uid "123")
-(setq habitica-token "456")
-```
-You can find your uid and token by following the instructions [here](http://habitica.wikia.com/wiki/API_Options).
-
 ## Usage
 To see your tasks, call
 ``` lisp
 M-x habitica-tasks
 ```
+
+On your first use, the extension will prompt your for your username and password. These are used to query your user id and api token from the service.
 
 ## Shortcuts
 Place your cursor on the task
@@ -39,6 +34,14 @@ C-x t g => refresh
 ```
 
 ## Customize
+### Auto login
+If you restart Emacs often, or if you just don't like entering your username or password, it is possible to bypass it by setting your user id and token directly:
+``` lisp
+(setq habitica-uid "123")
+(setq habitica-token "456")
+```
+You can find your uid and token by following the instructions [here](http://habitica.wikia.com/wiki/API_Options).
+
 ### Highlithing
 If you want to try highlighting tasks based on their value
 ``` lisp
