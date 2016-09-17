@@ -411,6 +411,13 @@ PROFILE is the JSON profile data"
   (dolist (value (append (habitica--send-request "/tags" "GET" "") nil))
     (setq habitica-tags (cl-acons (assoc-default 'id value) (assoc-default 'name value) habitica-tags))))
 
+(defun habitica--dislay-tags ()
+  "Displays all the tags in a temp buffer to help user selection."
+  (with-output-to-temp-buffer "*habitica tags*"
+    (progn (princ "Habitica tags:\n\n")
+           (dotimes (i (length habitica-tags))
+             (princ (concat (number-to-string (+ i 1)) ". " (cdr (nth i habitica-tags)) "\n"))))))
+
 
 ;;;; Interactive
 (defun habitica-up-task ()
@@ -498,6 +505,14 @@ NAME is the name of the new tag."
   (interactive "sEnter the new tag name: ")
   (let ((data (habitica--send-request "/tags" "POST" (concat "name=" name))))
     (push (cons (assoc-default 'id data) (assoc-default 'name data)) habitica-tags)))
+
+(defun habitica-add-tag-to-task ()
+  "Add a tag to the task under the cursor."
+  (interactive)
+  (habitica--dislay-tags)
+  (let ((index (read-number "Select the tag index: ")))
+    (message "%s" (nth (- index 1) habitica-tags))))
+
 
 (defun habitica-login (username)
   "Login and retrives the user id and api token.
