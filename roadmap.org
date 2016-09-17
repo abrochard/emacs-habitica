@@ -1,7 +1,12 @@
 #+TITLE: Roadmap
 
 * Features
-** TODO create, update, delete tags
+** TODO full tags support [1/5]
+   - [X] create tag
+   - [ ] update tag
+   - [ ] delete tag
+   - [ ] add tag to a task
+   - [ ] remove tag from a task
 ** TODO notifications [2/4]
    - [X] show diff in exp
    - [X] show new level
