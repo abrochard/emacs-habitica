@@ -491,6 +491,14 @@ LEVEL index from 1 to 3."
   (habitica-up-task)
   (message "Bought reward %s" (org-element-property :raw-value (org-element-at-point))))
 
+(defun habitica-create-tag (name)
+  "Create a new tag for tasks and add it to the list.
+
+NAME is the name of the new tag."
+  (interactive "sEnter the new tag name: ")
+  (let ((data (habitica--send-request "/tags" "POST" (concat "name=" name))))
+    (push (cons (assoc-default 'id data) (assoc-default 'name data)) habitica-tags)))
+
 (defun habitica-login (username)
   "Login and retrives the user id and api token.
 
