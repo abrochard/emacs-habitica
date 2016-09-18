@@ -135,6 +135,8 @@
 (defvar habitica-difficulty '((1 . "easy") (1.5 . "medium") (2 . "hard"))
   "Assoc list of priority/difficulty.")
 
+(defvar habitica-tags-buffer-name "*habitica tags*")
+
 (defvar habitica-command-map
   (let ((map (make-sparse-keymap)))
     (define-key map "n"         #'habitica-new-task)
@@ -411,13 +413,16 @@ PROFILE is the JSON profile data"
   (dolist (value (append (habitica--send-request "/tags" "GET" "") nil))
     (setq habitica-tags (cl-acons (assoc-default 'id value) (assoc-default 'name value) habitica-tags))))
 
-(defun habitica--dislay-tags ()
-  "Displays all the tags in a temp buffer to help user selection."
-  (with-output-to-temp-buffer "*habitica tags*"
-    (progn (princ "Habitica tags:\n\n")
-           (dotimes (i (length habitica-tags))
-             (princ (concat (number-to-string (+ i 1)) ". " (cdr (nth i habitica-tags)) "\n"))))))
+(defun habitica--display-tags (tags)
+  "Display all the tags in a temp buffer to help user selection.
+Omit streak count.
 
+TAGS is the list of tags to show."
+  (with-output-to-temp-buffer habitica-tags-buffer-name
+    (progn (princ "Habitica tags:\n\n")
+           (dotimes (i (length tags))
+             (if (not (string-match-p "[0-9]+" (nth i tags)))
+                 (princ (concat (number-to-string (+ i 1)) ". " (nth i tags) "\n")))))))
 
 ;;;; Interactive
 (defun habitica-up-task ()
@@ -509,9 +514,28 @@ NAME is the name of the new tag."
 (defun habitica-add-tag-to-task ()
   "Add a tag to the task under the cursor."
   (interactive)
-  (habitica--dislay-tags)
-  (let ((index (read-number "Select the tag index: ")))
-    (message "%s" (nth (- index 1) habitica-tags))))
+  (habitica--display-tags (mapcar 'cdr habitica-tags))
+  (let ((index (read-number "Select the index of the tag to add: ")))
+    (habitica--send-request (concat "/tasks/"
+                                    (org-element-property :ID (org-element-at-point))
+                                    "/tags/"
+                                    (format "%s" (car (nth (- index 1) habitica-tags))))
+                            "POST" "")
+    (org-set-tags-to (append (cons (cdr (nth (- index 1) habitica-tags)) nil) (org-get-tags))))
+  (kill-buffer habitica-tags-buffer-name))
+
+(defun habitica-remove-tag-from-task ()
+  "Remove a tag from the task under the cursor."
+  (interactive)
+  (habitica--display-tags (org-get-tags))
+  (let ((index (read-number "Select the index of tag to remove: ")))
+    (habitica--send-request (concat "/tasks/"
+                                    (org-element-property :ID (org-element-at-point))
+                                    "/tags/"
+                                    (car (rassoc (nth (- index 1) (org-get-tags)) habitica-tags)))
+                            "DELETE" "")
+    (org-set-tags-to (delete (nth (- index 1) (org-get-tags)) (org-get-tags))))
+  (kill-buffer habitica-tags-buffer-name))
 
 
 (defun habitica-login (username)

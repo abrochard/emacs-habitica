@@ -1,12 +1,12 @@
 #+TITLE: Roadmap
 
 * Features
-** TODO full tags support [1/5]
+** TODO full tags support [3/5]
    - [X] create tag
    - [ ] update tag
    - [ ] delete tag
-   - [ ] add tag to a task
-   - [ ] remove tag from a task
+   - [X] add tag to a task
+   - [X] remove tag from a task
 ** TODO notifications [2/4]
    - [X] show diff in exp
    - [X] show new level
@@ -56,3 +56,4 @@
 * Up in the air
 ** TODO avatar integration
 ** TODO pets integration
+** TODO special class abilities
