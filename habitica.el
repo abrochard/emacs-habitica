@@ -411,7 +411,8 @@ PROFILE is the JSON profile data"
   "Get the dictionary id/tags."
   (setq habitica-tags '())
   (dolist (value (append (habitica--send-request "/tags" "GET" "") nil))
-    (setq habitica-tags (cl-acons (assoc-default 'id value) (assoc-default 'name value) habitica-tags))))
+    (setq habitica-tags (cl-acons (assoc-default 'id value) (assoc-default 'name value) habitica-tags)))
+  (setq habitica-tags (reverse habitica-tags)))
 
 (defun habitica--display-tags (tags)
   "Display all the tags in a temp buffer to help user selection.
@@ -423,6 +424,21 @@ TAGS is the list of tags to show."
            (dotimes (i (length tags))
              (if (not (string-match-p "[0-9]+" (nth i tags)))
                  (princ (concat (number-to-string (+ i 1)) ". " (nth i tags) "\n")))))))
+
+(defun habitica--remove-tag-everywhere (tag)
+  "Utility function to remove the org tag from all tasks.
+
+TAG is the name of tag to remove"
+  (save-excursion
+    ;; remove everywhere
+    (goto-char (point-min))
+    (while (search-forward (concat ":" tag) (point-max) t)
+      (replace-match ""))
+    ;; clean up
+    (goto-char (point-min))
+    (while (re-search-forward " :\n" (point-max) t)
+      (replace-match "")))
+  (org-align-all-tags))
 
 ;;;; Interactive
 (defun habitica-up-task ()
@@ -510,6 +526,18 @@ NAME is the name of the new tag."
   (interactive "sEnter the new tag name: ")
   (let ((data (habitica--send-request "/tags" "POST" (concat "name=" name))))
     (push (cons (assoc-default 'id data) (assoc-default 'name data)) habitica-tags)))
+
+(defun habitica-delete-tag ()
+  "Delete a tag and remove it from all tasks."
+  (interactive)
+  (habitica--display-tags (mapcar 'cdr habitica-tags))
+  (let ((index (read-number "Select the index of the tag to delete: ")))
+    (habitica--send-request (concat "/tags/" (car (nth (- index 1) habitica-tags)))
+                            "DELETE" "")
+    (habitica--remove-tag-everywhere (cdr (nth (- index 1) habitica-tags)))
+    (setq habitica-tags (delete (nth (- index 1) habitica-tags) habitica-tags)))
+  (kill-buffer habitica-tags-buffer-name))
+
 
 (defun habitica-add-tag-to-task ()
   "Add a tag to the task under the cursor."
