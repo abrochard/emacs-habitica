@@ -59,6 +59,8 @@
 ;; C-x t i => set difficulty
 ;; C-x t D => delete the task
 ;; C-x t b => buy reward
+;; C-x t a => add a tag to the task
+;; C-x t A => remove a tag from the task
 ;; C-x t g => refresh
 ;;
 
@@ -135,6 +137,8 @@
 (defvar habitica-difficulty '((1 . "easy") (1.5 . "medium") (2 . "hard"))
   "Assoc list of priority/difficulty.")
 
+(defvar habitica-tags-buffer-name "*habitica tags*")
+
 (defvar habitica-command-map
   (let ((map (make-sparse-keymap)))
     (define-key map "n"         #'habitica-new-task)
@@ -146,6 +150,8 @@
     (define-key map "d"         #'habitica-set-deadline)
     (define-key map "b"         #'habitica-buy-reward)
     (define-key map "i"         #'habitica-set-difficulty)
+    (define-key map "a"         #'habitica-add-tag-to-task)
+    (define-key map "A"         #'habitica-remove-tag-from-task)
     map)
   "Keymap of habitica interactive commands.")
 
@@ -167,13 +173,22 @@
   (easy-menu-create-menu
    "Habitica"
    '(["Create a new task" habitica-new-task habitica-mode]
+     ["Delete a task" habitica-delete-task]
+     "---"
      ["Mark task as todo/done" habitica-todo-task habitica-mode]
      ["+ a habit" habitica-up-task]
      ["- a habit" habitica-down-task]
+     "---"
      ["Set deadline for todo" habitica-set-deadline]
      ["Set difficulty for task" habitica-set-difficulty]
+     "---"
      ["Buy reward" habitica-buy-reward]
-     ["Delete a task" habitica-delete-task]
+     "---"
+     ["Create a new tag" habitica-create-tag]
+     ["Add a tag to task" habitica-add-tag-to-task]
+     ["Remove a tag from task" habitica-remove-tag-from-task]
+     ["Delete a tag" habitica-delete-tag]
+     "---"
      ["Refresh tasks" habitica-tasks t]))
   "Menu of command `habitica-mode'.")
 
@@ -252,7 +267,7 @@ INCREMENT is what to add to the streak count."
   (let ((new-tags '()))
     (dolist (tag (org-get-tags))
       (message "%s" new-tags)
-      (if (string-match-p "[0-9]+" tag)
+      (if (string-match-p "^[0-9]+$" tag)
           (setq new-tags (push (format "%s" (+ increment (string-to-number tag))) new-tags))
         (setq new-tags (push tag new-tags))))
     (org-set-tags-to new-tags)))
@@ -409,8 +424,45 @@ PROFILE is the JSON profile data"
   "Get the dictionary id/tags."
   (setq habitica-tags '())
   (dolist (value (append (habitica--send-request "/tags" "GET" "") nil))
-    (setq habitica-tags (cl-acons (assoc-default 'id value) (assoc-default 'name value) habitica-tags))))
+    (setq habitica-tags (cl-acons (assoc-default 'id value) (assoc-default 'name value) habitica-tags)))
+  (setq habitica-tags (reverse habitica-tags)))
 
+(defun habitica--display-tags (tags)
+  "Display all the tags in a temp buffer to help user selection.
+Omit streak count.
+
+TAGS is the list of tags to show."
+  (with-output-to-temp-buffer habitica-tags-buffer-name
+    (progn (princ "Habitica tags:\n\n")
+           (dotimes (i (length tags))
+             (if (not (string-match-p "^[0-9]+$" (nth i tags)))
+                 (princ (concat (number-to-string (+ i 1)) ". " (nth i tags) "\n")))))))
+
+(defun habitica--remove-tag-everywhere (tag)
+  "Utility function to remove the org tag from all tasks.
+
+TAG is the name of tag to remove"
+  (save-excursion
+    ;; remove everywhere
+    (goto-char (point-min))
+    (while (search-forward (concat ":" tag) (point-max) t)
+      (replace-match ""))
+    ;; clean up
+    (goto-char (point-min))
+    (while (re-search-forward " :\n" (point-max) t)
+      (replace-match "")))
+  (org-align-all-tags))
+
+(defun habitica--rename-tag-everywhere (old-tag new-tag)
+  "Utility function to remove the org tag from all tasks.
+
+OLD-TAG is the current name of the tag.
+NEW-TAG is the new name to give to the tag."
+  (save-excursion
+    (goto-char (point-min))
+    (while (search-forward (concat ":" old-tag ":") (point-max) t)
+      (replace-match (concat ":" new-tag ":"))))
+  (org-align-all-tags))
 
 ;;;; Interactive
 (defun habitica-up-task ()
@@ -490,6 +542,71 @@ LEVEL index from 1 to 3."
   (interactive)
   (habitica-up-task)
   (message "Bought reward %s" (org-element-property :raw-value (org-element-at-point))))
+
+(defun habitica-create-tag (name)
+  "Create a new tag for tasks and add it to the list.
+
+NAME is the name of the new tag."
+  (interactive "sEnter the new tag name: ")
+  (let ((data (habitica--send-request "/tags" "POST" (concat "name=" name))))
+    (push (cons (assoc-default 'id data) (assoc-default 'name data)) habitica-tags)))
+
+(defun habitica-delete-tag ()
+  "Delete a tag and remove it from all tasks."
+  (interactive)
+  (habitica--display-tags (mapcar 'cdr habitica-tags))
+  (let ((index (read-number "Select the index of the tag to delete: ")))
+    (habitica--send-request (concat "/tags/" (car (nth (- index 1) habitica-tags)))
+                            "DELETE" "")
+    (habitica--remove-tag-everywhere (cdr (nth (- index 1) habitica-tags)))
+    (setq habitica-tags (delete (nth (- index 1) habitica-tags) habitica-tags)))
+  (kill-buffer habitica-tags-buffer-name))
+
+(defun habitica-rename-tag ()
+  "Rename a tag and update it everywhere."
+  (interactive)
+  (habitica--display-tags (mapcar 'cdr habitica-tags))
+  (let ((index (read-number "Select the index of the tag to rename: "))
+        (name (read-string "Enter a new name: ")))
+    (habitica--send-request (concat "/tags/" (car (nth (- index 1) habitica-tags)))
+                            "PUT"
+                            (concat "name=" name))
+    (habitica--rename-tag-everywhere (cdr (nth (- index 1) habitica-tags)) name)
+    ;; rename in habitica-tags
+    (setq habitica-tags (mapcar (lambda (tag)
+                                  (if (eq tag (nth (- index 1) habitica-tags))
+                                      (cons (car tag) name)
+                                    tag))
+                                habitica-tags)))
+  (kill-buffer habitica-tags-buffer-name))
+
+
+(defun habitica-add-tag-to-task ()
+  "Add a tag to the task under the cursor."
+  (interactive)
+  (habitica--display-tags (mapcar 'cdr habitica-tags))
+  (let ((index (read-number "Select the index of the tag to add: ")))
+    (habitica--send-request (concat "/tasks/"
+                                    (org-element-property :ID (org-element-at-point))
+                                    "/tags/"
+                                    (format "%s" (car (nth (- index 1) habitica-tags))))
+                            "POST" "")
+    (org-set-tags-to (append (cons (cdr (nth (- index 1) habitica-tags)) nil) (org-get-tags))))
+  (kill-buffer habitica-tags-buffer-name))
+
+(defun habitica-remove-tag-from-task ()
+  "Remove a tag from the task under the cursor."
+  (interactive)
+  (habitica--display-tags (org-get-tags))
+  (let ((index (read-number "Select the index of tag to remove: ")))
+    (habitica--send-request (concat "/tasks/"
+                                    (org-element-property :ID (org-element-at-point))
+                                    "/tags/"
+                                    (car (rassoc (nth (- index 1) (org-get-tags)) habitica-tags)))
+                            "DELETE" "")
+    (org-set-tags-to (delete (nth (- index 1) (org-get-tags)) (org-get-tags))))
+  (kill-buffer habitica-tags-buffer-name))
+
 
 (defun habitica-login (username)
   "Login and retrives the user id and api token.

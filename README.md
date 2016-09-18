@@ -30,6 +30,8 @@ C-x t d => set deadline
 C-x t i => set difficulty
 C-x t D => delete the task
 C-x t b => buy reward
+C-x t a => add a tag to the task
+C-x t A => remove a tag from the task
 C-x t g => refresh
 ```
 

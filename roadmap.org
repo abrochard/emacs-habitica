@@ -1,13 +1,20 @@
 #+TITLE: Roadmap
 
 * Features
-** TODO create, update, delete tags
 ** TODO notifications [2/4]
    - [X] show diff in exp
    - [X] show new level
    - [ ] show item drop
    - [ ] better notification system
 
+** DONE full tags support [6/6]
+   - State "DONE"       from "TODO"       [2016-09-18 dim. 11:08]
+   - [X] create tag
+   - [X] update tag
+   - [X] delete tag
+   - [X] add tag to a task
+   - [X] remove tag from a task
+   - [X] set keybinding map for tag operation
 ** DONE login on first call
    - State "DONE"       from "TODO"       [2016-09-13 mar. 19:07]
 ** DONE show mana
@@ -51,3 +58,4 @@
 * Up in the air
 ** TODO avatar integration
 ** TODO pets integration
+** TODO special class abilities
