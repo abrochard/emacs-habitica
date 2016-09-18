@@ -59,6 +59,8 @@
 ;; C-x t i => set difficulty
 ;; C-x t D => delete the task
 ;; C-x t b => buy reward
+;; C-x t a => add a tag to the task
+;; C-x t A => remove a tag from the task
 ;; C-x t g => refresh
 ;;
 
@@ -148,6 +150,8 @@
     (define-key map "d"         #'habitica-set-deadline)
     (define-key map "b"         #'habitica-buy-reward)
     (define-key map "i"         #'habitica-set-difficulty)
+    (define-key map "a"         #'habitica-add-tag-to-task)
+    (define-key map "A"         #'habitica-remove-tag-from-task)
     map)
   "Keymap of habitica interactive commands.")
 
@@ -169,13 +173,22 @@
   (easy-menu-create-menu
    "Habitica"
    '(["Create a new task" habitica-new-task habitica-mode]
+     ["Delete a task" habitica-delete-task]
+     "---"
      ["Mark task as todo/done" habitica-todo-task habitica-mode]
      ["+ a habit" habitica-up-task]
      ["- a habit" habitica-down-task]
+     "---"
      ["Set deadline for todo" habitica-set-deadline]
      ["Set difficulty for task" habitica-set-difficulty]
+     "---"
      ["Buy reward" habitica-buy-reward]
-     ["Delete a task" habitica-delete-task]
+     "---"
+     ["Create a new tag" habitica-create-tag]
+     ["Add a tag to task" habitica-add-tag-to-task]
+     ["Remove a tag from task" habitica-remove-tag-from-task]
+     ["Delete a tag" habitica-delete-tag]
+     "---"
      ["Refresh tasks" habitica-tasks t]))
   "Menu of command `habitica-mode'.")
 
