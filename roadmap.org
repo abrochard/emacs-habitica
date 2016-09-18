@@ -1,12 +1,13 @@
 #+TITLE: Roadmap
 
 * Features
-** TODO full tags support [4/5]
+** TODO full tags support [5/6]
    - [X] create tag
-   - [ ] update tag
+   - [X] update tag
    - [X] delete tag
    - [X] add tag to a task
    - [X] remove tag from a task
+   - [ ] set keybinding map for tag operation
 ** TODO notifications [2/4]
    - [X] show diff in exp
    - [X] show new level

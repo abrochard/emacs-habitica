@@ -254,7 +254,7 @@ INCREMENT is what to add to the streak count."
   (let ((new-tags '()))
     (dolist (tag (org-get-tags))
       (message "%s" new-tags)
-      (if (string-match-p "[0-9]+" tag)
+      (if (string-match-p "^[0-9]+$" tag)
           (setq new-tags (push (format "%s" (+ increment (string-to-number tag))) new-tags))
         (setq new-tags (push tag new-tags))))
     (org-set-tags-to new-tags)))
@@ -422,7 +422,7 @@ TAGS is the list of tags to show."
   (with-output-to-temp-buffer habitica-tags-buffer-name
     (progn (princ "Habitica tags:\n\n")
            (dotimes (i (length tags))
-             (if (not (string-match-p "[0-9]+" (nth i tags)))
+             (if (not (string-match-p "^[0-9]+$" (nth i tags)))
                  (princ (concat (number-to-string (+ i 1)) ". " (nth i tags) "\n")))))))
 
 (defun habitica--remove-tag-everywhere (tag)
@@ -438,6 +438,17 @@ TAG is the name of tag to remove"
     (goto-char (point-min))
     (while (re-search-forward " :\n" (point-max) t)
       (replace-match "")))
+  (org-align-all-tags))
+
+(defun habitica--rename-tag-everywhere (old-tag new-tag)
+  "Utility function to remove the org tag from all tasks.
+
+OLD-TAG is the current name of the tag.
+NEW-TAG is the new name to give to the tag."
+  (save-excursion
+    (goto-char (point-min))
+    (while (search-forward (concat ":" old-tag ":") (point-max) t)
+      (replace-match (concat ":" new-tag ":"))))
   (org-align-all-tags))
 
 ;;;; Interactive
@@ -536,6 +547,24 @@ NAME is the name of the new tag."
                             "DELETE" "")
     (habitica--remove-tag-everywhere (cdr (nth (- index 1) habitica-tags)))
     (setq habitica-tags (delete (nth (- index 1) habitica-tags) habitica-tags)))
+  (kill-buffer habitica-tags-buffer-name))
+
+(defun habitica-rename-tag ()
+  "Rename a tag and update it everywhere."
+  (interactive)
+  (habitica--display-tags (mapcar 'cdr habitica-tags))
+  (let ((index (read-number "Select the index of the tag to rename: "))
+        (name (read-string "Enter a new name: ")))
+    (habitica--send-request (concat "/tags/" (car (nth (- index 1) habitica-tags)))
+                            "PUT"
+                            (concat "name=" name))
+    (habitica--rename-tag-everywhere (cdr (nth (- index 1) habitica-tags)) name)
+    ;; rename in habitica-tags
+    (setq habitica-tags (mapcar (lambda (tag)
+                                  (if (eq tag (nth (- index 1) habitica-tags))
+                                      (cons (car tag) name)
+                                    tag))
+                                habitica-tags)))
   (kill-buffer habitica-tags-buffer-name))
 
 
