@@ -47,6 +47,7 @@
 * Backlog
 ** TODO figure out menu visibility
 ** TODO when you +/- a task, use response to update profile instead of making another request
+** TODO when cancel on tag display temp buffer, kill temp buffer
 
 ** DONE update streak count on todo cycle
    - State "DONE"       from "TODO"       [2016-09-11 dim. 11:43]
