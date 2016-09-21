@@ -139,6 +139,8 @@
 
 (defvar habitica-tags-buffer-name "*habitica tags*")
 
+(defvar habitica-notification-text nil)
+
 (defvar habitica-command-map
   (let ((map (make-sparse-keymap)))
     (define-key map "n"         #'habitica-new-task)
@@ -353,21 +355,21 @@ DIRECTION is up or down, if the task is a habit."
   "Compare the new profile to the current one and display notifications.
 
 PROFILE the user stats as JSON."
-  (let ((notification ""))
-    (cond ((equal habitica-level (assoc-default 'lvl profile))
-           (setq notification
-                 (concat notification (format "Exp: %f\n" (- (assoc-default 'exp profile) habitica-exp)))))
-          ((< habitica-level (assoc-default 'lvl profile))
-           (setq notification
-                 (concat notification (format "Reached level %d! Exp: %f"
-                                              (assoc-default 'lvl profile)
-                                              (+ (- habitica-max-exp habitica-exp) (assoc-default 'exp profile))))))
-          ((> habitica-level (assoc-default 'lvl profile))
-           (setq notification
-                 (concat notification
-                         (format "Fell to level %d. Exp: %f" (assoc-default 'lvl profile)
-                                 (* -1 (+ (- (assoc-default 'toNextLevel profile) (assoc-default 'exp profile)) habitica-exp)))))))
-    (with-temp-message notification)))
+  (setq habitica-notification-text "")
+  (cond ((equal habitica-level (assoc-default 'lvl profile))
+         (setq habitica-notification-text
+               (concat habitica-notification-text (format "Experience gained: %f" (- (assoc-default 'exp profile) habitica-exp)))))
+        ((< habitica-level (assoc-default 'lvl profile))
+         (setq habitica-notification-text
+               (concat habitica-notification-text (format "\nReached level %d! Exp: %f"
+                                            (assoc-default 'lvl profile)
+                                            (+ (- habitica-max-exp habitica-exp) (assoc-default 'exp profile))))))
+        ((> habitica-level (assoc-default 'lvl profile))
+         (setq habitica-notification-text
+               (concat habitica-notification-text
+                       (format "\nFell to level %d. Exp: %f" (assoc-default 'lvl profile)
+                               (* -1 (+ (- (assoc-default 'toNextLevel profile) (assoc-default 'exp profile)) habitica-exp)))))))
+  (message habitica-notification-text))
 
 (defun habitica--set-profile (profile)
   "Set the profile variables.
@@ -481,7 +483,8 @@ NEW-TAG is the new name to give to the tag."
     (if (< habitica-habit-threshold (+ current-value (assoc-default 'delta result)))
         (org-todo "DONE"))
     (org-set-property "value" (number-to-string (+ current-value (assoc-default 'delta result)))))
-  (habitica--refresh-profile))
+  (habitica--refresh-profile)
+  (with-temp-message habitica-notification-text))
 
 (defun habitica-down-task ()
   "Down or - a task."
@@ -491,7 +494,8 @@ NEW-TAG is the new name to give to the tag."
     (if (> habitica-habit-threshold (+ current-value (assoc-default 'delta result)))
         (org-todo "TODO"))
     (org-set-property "value" (number-to-string (+ current-value (assoc-default 'delta result)))))
-  (habitica--refresh-profile))
+  (habitica--refresh-profile)
+  (with-temp-message habitica-notification-text))
 
 (defun habitica-todo-task ()
   "Mark the current task as done or todo depending on its current state."
@@ -502,11 +506,13 @@ NEW-TAG is the new name to give to the tag."
         (progn (habitica-up-task)
                (if habitica-show-streak
                    (habitica--update-streak 1))
-               (org-todo "DONE"))
+               (org-todo "DONE")
+               (with-temp-message habitica-notification-text))
       (progn (habitica-down-task)
              (if habitica-show-streak
                  (habitica--update-streak -1))
-             (org-todo "TODO")))))
+             (org-todo "TODO")
+             (with-temp-message habitica-notification-text)))))
 
 (defun habitica-new-task (name)
   "Attempt to be smart to create a new task based on context.
