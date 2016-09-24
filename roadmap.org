@@ -1,11 +1,11 @@
 #+TITLE: Roadmap
 
 * Features
-** TODO notifications [2/4]
+** TODO notifications [3/4]
    - [X] show diff in exp
    - [X] show new level
    - [ ] show item drop
-   - [ ] better notification system
+   - [X] better notification system
 
 ** DONE full tags support [6/6]
    - State "DONE"       from "TODO"       [2016-09-18 dim. 11:08]

@@ -349,17 +349,41 @@ DIRECTION is up or down, if the task is a habit."
   "Get the user's raw profile data."
   (habitica--send-request "/user" "GET" ""))
 
-(defun habitica--show-notifications (profile)
+(defun habitica--set-profile-tag (class tag)
+  "Set a tag in the for a profile class.
+
+CLASS is the class you want to tag.
+TAG is what you want to show."
+  (save-excursion (goto-char (point-min))
+                  (if (search-forward (concat "** " class) (point-max) t)
+                      (org-set-tags-to tag))))
+
+(defun habitica--show-notifications (current-level old-level current-exp old-exp to-next-level)
   "Compare the new profile to the current one and display notifications.
 
-PROFILE the user stats as JSON."
-  (cond ((equal habitica-level (assoc-default 'lvl profile))
-         (message "Exp: %f" (- (assoc-default 'exp profile) habitica-exp)))
-        ((< habitica-level (assoc-default 'lvl profile))
-         (message "Reached level %d! Exp: %f" (assoc-default 'lvl profile) (+ (- habitica-max-exp habitica-exp) (assoc-default 'exp profile))))
-        ((> habitica-level (assoc-default 'lvl profile))
-         (message "Fell to level %d. Exp: %f" (assoc-default 'lvl profile)
-                  (* -1 (+ (- (assoc-default 'toNextLevel profile) (assoc-default 'exp profile)) habitica-exp))))))
+CURRENT-LEVEL is the current level.
+OLD-LEVEL is what the level was before the operation.
+CURRENT-EXP is the current exp.
+OLD-EXP is what the experience was before the operation.
+TO-NEXT-LEVEL is the experience required to reach the next level."
+  (cond ((equal old-level current-level)
+         (let ((exp-diff (- current-exp old-exp)))
+           (message "Exp: %f" exp-diff)
+           (if (< 0 exp-diff)
+               (habitica--set-profile-tag "Exp" (format "+%.2f" exp-diff))
+             (habitica--set-profile-tag "Exp" (format "%.2f" exp-diff)))))
+        ((< old-level current-level)
+         (let ((exp-diff (+ (- habitica-max-exp old-exp) current-exp))
+               (level-diff (- current-level old-level)))
+           (message "Reached level %d! Exp: %f" current-level exp-diff)
+           (habitica--set-profile-tag "Level" (format "+%s" level-diff))
+           (habitica--set-profile-tag "Exp" (format "+%.2f" exp-diff))))
+        ((> old-level current-level)
+         (let ((exp-diff (* -1 (+ (- to-next-level current-exp) old-exp)))
+               (level-diff (- current-level old-level)))
+           (message "Fell to level %d. Exp: %f" current-level exp-diff)
+           (habitica--set-profile-tag "Level" (format "%s" level-diff))
+           (habitica--set-profile-tag "Exp" (format "%.2f" exp-diff))))))
 
 (defun habitica--set-profile (profile)
   "Set the profile variables.
@@ -387,12 +411,16 @@ LENGTH is the total number of characters in the bar."
           (make-string (truncate (fround (* (/ (- max current) max) length))) ?-)
           "]"))
 
-(defun habitica--parse-profile (profile)
+(defun habitica--parse-profile (stats show-notification)
   "Formats the user stats as a header.
 
-PROFILE is the JSON profile data"
-  (let ((stats (assoc-default 'stats profile)))
-    (habitica--show-notifications stats) ;show the difference in exp
+STATS is the JSON profile stats data.
+SHOW-NOTIFICATION, if true, it will add notification tags."
+  (let ((old-exp habitica-exp)
+        (current-exp (assoc-default 'exp stats))
+        (old-level habitica-level)
+        (current-level (assoc-default 'lvl stats))
+        (to-next-level (assoc-default 'toNextLevel stats)))
     (habitica--set-profile stats)
     (insert "* Stats\n")
     (insert (concat "** Level  : " (format "%d" habitica-level) "\n"))
@@ -411,14 +439,16 @@ PROFILE is the JSON profile data"
                         "  "
                         (format "%d" habitica-mp) " / " (format "%d" habitica-max-mp) "\n")))
     (insert (concat "** Gold   : " (format "%d" habitica-gold) "\n"))
-    (insert (concat "** Silver : " (format "%d" habitica-silver) "\n"))))
+    (insert (concat "** Silver : " (format "%d" habitica-silver) "\n"))
+    (if show-notification
+        (habitica--show-notifications current-level old-level current-exp old-exp to-next-level))))
 
 (defun habitica--refresh-profile ()
   "Kill the current profile and parse a new one."
   (save-excursion
     (progn (re-search-backward "^\* Stats" (point-min) t)
            (org-cut-subtree)
-           (habitica--parse-profile (habitica--get-profile)))))
+           (habitica--parse-profile (assoc-default 'stats (habitica--get-profile)) t))))
 
 (defun habitica--get-tags ()
   "Get the dictionary id/tags."
@@ -646,7 +676,7 @@ USERNAME is the user's username."
   (habitica--get-tags)
   (let ((habitica-data (habitica--get-tasks))
         (habitica-profile (habitica--get-profile)))
-    (habitica--parse-profile habitica-profile)
+    (habitica--parse-profile (assoc-default 'stats habitica-profile) nil)
     (let ((tasksOrder (assoc-default 'tasksOrder habitica-profile)))
       (insert "* Habits :habit:\n")
       (habitica--parse-tasks habitica-data (assoc-default 'habits tasksOrder))
