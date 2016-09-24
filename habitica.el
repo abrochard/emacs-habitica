@@ -353,21 +353,13 @@ DIRECTION is up or down, if the task is a habit."
   "Compare the new profile to the current one and display notifications.
 
 PROFILE the user stats as JSON."
-  (let ((notification ""))
-    (cond ((equal habitica-level (assoc-default 'lvl profile))
-           (setq notification
-                 (concat notification (format "Exp: %f\n" (- (assoc-default 'exp profile) habitica-exp)))))
-          ((< habitica-level (assoc-default 'lvl profile))
-           (setq notification
-                 (concat notification (format "Reached level %d! Exp: %f"
-                                              (assoc-default 'lvl profile)
-                                              (+ (- habitica-max-exp habitica-exp) (assoc-default 'exp profile))))))
-          ((> habitica-level (assoc-default 'lvl profile))
-           (setq notification
-                 (concat notification
-                         (format "Fell to level %d. Exp: %f" (assoc-default 'lvl profile)
-                                 (* -1 (+ (- (assoc-default 'toNextLevel profile) (assoc-default 'exp profile)) habitica-exp)))))))
-    (with-temp-message notification)))
+  (cond ((equal habitica-level (assoc-default 'lvl profile))
+         (message "Exp: %f" (- (assoc-default 'exp profile) habitica-exp)))
+        ((< habitica-level (assoc-default 'lvl profile))
+         (message "Reached level %d! Exp: %f" (assoc-default 'lvl profile) (+ (- habitica-max-exp habitica-exp) (assoc-default 'exp profile))))
+        ((> habitica-level (assoc-default 'lvl profile))
+         (message "Fell to level %d. Exp: %f" (assoc-default 'lvl profile)
+                  (* -1 (+ (- (assoc-default 'toNextLevel profile) (assoc-default 'exp profile)) habitica-exp))))))
 
 (defun habitica--set-profile (profile)
   "Set the profile variables.
