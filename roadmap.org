@@ -1,11 +1,11 @@
 #+TITLE: Roadmap
 
 * Features
-** TODO notifications [2/4]
+** TODO notifications [3/4]
    - [X] show diff in exp
    - [X] show new level
    - [ ] show item drop
-   - [ ] better notification system
+   - [X] better notification system
 
 ** DONE full tags support [6/6]
    - State "DONE"       from "TODO"       [2016-09-18 dim. 11:08]
@@ -47,6 +47,7 @@
 * Backlog
 ** TODO figure out menu visibility
 ** TODO when you +/- a task, use response to update profile instead of making another request
+** TODO when cancel on tag display temp buffer, kill temp buffer
 
 ** DONE update streak count on todo cycle
    - State "DONE"       from "TODO"       [2016-09-11 dim. 11:43]
