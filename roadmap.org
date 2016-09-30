@@ -60,3 +60,4 @@
 ** TODO avatar integration
 ** TODO pets integration
 ** TODO special class abilities
+** TODO stats page
