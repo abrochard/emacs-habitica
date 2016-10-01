@@ -468,6 +468,21 @@ TAGS is the list of tags to show."
              (if (not (string-match-p "^[0-9]+$" (nth i tags)))
                  (princ (concat (number-to-string (+ i 1)) ". " (nth i tags) "\n")))))))
 
+(defun habitica--choose-tag (tags prompt)
+  "Display tags and prompts the user to choose one.
+Returns the index of the selected tag.
+
+TAGS is the list of tags.
+PROMPT is what to prompt the user with."
+  (let ((inhibit-quit t)
+        (index nil))
+    (unless (with-local-quit
+              (progn (habitica--display-tags tags)
+                     (setq index (- (read-number prompt) 1))
+                     (kill-buffer habitica-tags-buffer-name)))
+      (progn (kill-buffer habitica-tags-buffer-name)))
+    index))
+
 (defun habitica--remove-tag-everywhere (tag)
   "Utility function to remove the org tag from all tasks.
 
@@ -584,58 +599,53 @@ NAME is the name of the new tag."
 (defun habitica-delete-tag ()
   "Delete a tag and remove it from all tasks."
   (interactive)
-  (habitica--display-tags (mapcar 'cdr habitica-tags))
-  (let ((index (read-number "Select the index of the tag to delete: ")))
-    (habitica--send-request (concat "/tags/" (car (nth (- index 1) habitica-tags)))
+  (let ((index (habitica--choose-tag (mapcar 'cdr habitica-tags)
+                                     "Select the index of the tag to delete: ")))
+    (habitica--send-request (concat "/tags/" (car (nth index habitica-tags)))
                             "DELETE" "")
-    (habitica--remove-tag-everywhere (cdr (nth (- index 1) habitica-tags)))
-    (setq habitica-tags (delete (nth (- index 1) habitica-tags) habitica-tags)))
-  (kill-buffer habitica-tags-buffer-name))
+    (habitica--remove-tag-everywhere (cdr (nth index habitica-tags)))
+    (setq habitica-tags (delete (nth index habitica-tags) habitica-tags))))
 
 (defun habitica-rename-tag ()
   "Rename a tag and update it everywhere."
   (interactive)
-  (habitica--display-tags (mapcar 'cdr habitica-tags))
-  (let ((index (read-number "Select the index of the tag to rename: "))
+  (let ((index (habitica--choose-tag (mapcar 'cdr habitica-tags)
+                                     "Select the index of the tag to rename: "))
         (name (read-string "Enter a new name: ")))
-    (habitica--send-request (concat "/tags/" (car (nth (- index 1) habitica-tags)))
+    (habitica--send-request (concat "/tags/" (car (nth index habitica-tags)))
                             "PUT"
                             (concat "name=" name))
-    (habitica--rename-tag-everywhere (cdr (nth (- index 1) habitica-tags)) name)
+    (habitica--rename-tag-everywhere (cdr (nth index habitica-tags)) name)
     ;; rename in habitica-tags
     (setq habitica-tags (mapcar (lambda (tag)
-                                  (if (eq tag (nth (- index 1) habitica-tags))
+                                  (if (eq tag (nth index habitica-tags))
                                       (cons (car tag) name)
                                     tag))
-                                habitica-tags)))
-  (kill-buffer habitica-tags-buffer-name))
+                                habitica-tags))))
 
 
 (defun habitica-add-tag-to-task ()
   "Add a tag to the task under the cursor."
   (interactive)
-  (habitica--display-tags (mapcar 'cdr habitica-tags))
-  (let ((index (read-number "Select the index of the tag to add: ")))
+  (let ((index (habitica--choose-tag (mapcar 'cdr habitica-tags)
+                                     "Select the index of the tag to add: ")))
     (habitica--send-request (concat "/tasks/"
                                     (org-element-property :ID (org-element-at-point))
                                     "/tags/"
-                                    (format "%s" (car (nth (- index 1) habitica-tags))))
+                                    (format "%s" (car (nth index habitica-tags))))
                             "POST" "")
-    (org-set-tags-to (append (cons (cdr (nth (- index 1) habitica-tags)) nil) (org-get-tags))))
-  (kill-buffer habitica-tags-buffer-name))
+    (org-set-tags-to (append (cons (cdr (nth index habitica-tags)) nil) (org-get-tags)))))
 
 (defun habitica-remove-tag-from-task ()
   "Remove a tag from the task under the cursor."
   (interactive)
-  (habitica--display-tags (org-get-tags))
-  (let ((index (read-number "Select the index of tag to remove: ")))
+  (let ((index (habitica--choose-tag (org-get-tags) "Select the index of tag to remove: ")))
     (habitica--send-request (concat "/tasks/"
                                     (org-element-property :ID (org-element-at-point))
                                     "/tags/"
-                                    (car (rassoc (nth (- index 1) (org-get-tags)) habitica-tags)))
+                                    (car (rassoc (nth index (org-get-tags)) habitica-tags)))
                             "DELETE" "")
-    (org-set-tags-to (delete (nth (- index 1) (org-get-tags)) (org-get-tags))))
-  (kill-buffer habitica-tags-buffer-name))
+    (org-set-tags-to (delete (nth index (org-get-tags)) (org-get-tags)))))
 
 
 (defun habitica-login (username)
