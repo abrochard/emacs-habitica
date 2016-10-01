@@ -47,8 +47,9 @@
 * Backlog
 ** TODO figure out menu visibility
 ** TODO when you +/- a task, use response to update profile instead of making another request
-** TODO when cancel on tag display temp buffer, kill temp buffer
 
+** DONE when cancel on tag display temp buffer, kill temp buffer
+   - State "DONE"       from "TODO"       [2016-10-01 sam. 14:17]
 ** DONE update streak count on todo cycle
    - State "DONE"       from "TODO"       [2016-09-11 dim. 11:43]
 ** DONE when +/- a habit, check threshold again
