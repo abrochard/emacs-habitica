@@ -241,6 +241,22 @@ TASK is the parsed JSON response."
   (if (and (assoc-default 'date task) (< 1 (length (assoc-default 'date task))))
       (insert (concat "   DEADLINE: <" (assoc-default 'date task) ">\n"))))
 
+(defun habitica--insert-checklist (task)
+  "Insert the checklist content of the task as an org check list.
+
+TASK is the parsed JSON resonse."
+  (insert " [/]\n")
+  ;; (insert (format "%s" (assoc-default 'checklist task)))
+  (dolist (check (append (assoc-default 'checklist task) nil))
+    (insert (concat "   - ["
+                    (if (eq (assoc-default 'completed check) t)
+                        "X"
+                      " ")
+                    "] "
+                    (assoc-default 'text check)
+                    " \n")))
+  (org-update-checkbox-count))
+
 (defun habitica--insert-tags (task)
   "Insert the tags and difficulty for a particular task.
 
@@ -288,6 +304,8 @@ TASK is the parsed JSON reponse."
 TASK is the parsed JSON response."
   (habitica--insert-todo task)
   (insert (assoc-default 'text task))
+  (if (< 0 (length (assoc-default 'checklist task)))
+      (habitica--insert-checklist task))
   (insert "\n")
   (habitica--insert-deadline task)
   (habitica--insert-tags task)
