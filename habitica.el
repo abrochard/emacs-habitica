@@ -61,6 +61,7 @@
 ;; C-x t b => buy reward
 ;; C-x t a => add a tag to the task
 ;; C-x t A => remove a tag from the task
+;; C-x t c => Score a checklist item
 ;; C-x t g => refresh
 ;;
 
@@ -152,6 +153,7 @@
     (define-key map "i"         #'habitica-set-difficulty)
     (define-key map "a"         #'habitica-add-tag-to-task)
     (define-key map "A"         #'habitica-remove-tag-from-task)
+    (define-key map "c"         #'habitica-score-checklist-item)
     map)
   "Keymap of habitica interactive commands.")
 
@@ -188,6 +190,11 @@
      ["Add a tag to task" habitica-add-tag-to-task]
      ["Remove a tag from task" habitica-remove-tag-from-task]
      ["Delete a tag" habitica-delete-tag]
+     "---"
+     ["Score a checklist item" habitica-score-checklist-item]
+     ["Add a checklist item" habitica-add-item-to-checklist]
+     ["Rename a checklist item" habitica-rename-item-on-checklist]
+     ["Delete a checklist item" habitica-delete-item-from-checklist]
      "---"
      ["Refresh tasks" habitica-tasks t]))
   "Menu of command `habitica-mode'.")
@@ -720,8 +727,8 @@ TEXT is the checklist item name."
                                   (habitica--get-current-task-id)
                                   "/checklist/")
                           "POST" (concat "text=" text))
-  ;; TODO insert element
-  (org-update-checkbox-count))
+  ;; TODO find a more graceful way to handle this
+  (habitica-tasks))
 
 (defun habitica-rename-item-on-checklist (text)
   "Rename the checklist item under the cursor.

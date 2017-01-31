@@ -1,13 +1,14 @@
 #+TITLE: Roadmap
 
 * Features
-** TODO checklist support
 ** TODO notifications [3/4]
    - [X] show diff in exp
    - [X] show new level
    - [ ] show item drop
    - [X] better notification system
 
+** DONE checklist support
+   - State "DONE"       from "TODO"       [2017-01-31 Tue 00:04]
 ** DONE full tags support [6/6]
    - State "DONE"       from "TODO"       [2016-09-18 dim. 11:08]
    - [X] create tag
