@@ -331,7 +331,7 @@ TASK is the parsed JSON response."
   (if habitica-turn-on-highlighting
       (catch 'aaa
         (habitica--highlight-task task))
-      )
+    )
   )
 
 (defun habitica--parse-tasks (tasks order)
@@ -439,16 +439,16 @@ TO-NEXT-LEVEL is the experience required to reach the next level."
   "Set the profile variables.
 
 PROFILE is the JSON formatted response."
-    (setq habitica-level (assoc-default 'lvl profile)) ;get level
-    (setq habitica-exp (fround (assoc-default 'exp profile))) ;get exp
-    (setq habitica-max-exp (assoc-default 'toNextLevel profile)) ;get max experience
-    (setq habitica-hp (fround (assoc-default 'hp profile))) ;get hp
-    (setq habitica-max-hp (assoc-default 'maxHealth profile)) ;get max hp
-    (setq habitica-mp (fround (assoc-default 'mp profile))) ;get mp
-    (setq habitica-max-mp (assoc-default 'maxMP profile)) ;get max mp
-    (setq habitica-gold (string-to-number (format "%d" (assoc-default 'gp profile)))) ;get gold
-    (setq habitica-silver (string-to-number (format "%d" (* 100 (- (assoc-default 'gp profile) habitica-gold))))) ;get silver
-    )
+  (setq habitica-level (assoc-default 'lvl profile)) ;get level
+  (setq habitica-exp (fround (assoc-default 'exp profile))) ;get exp
+  (setq habitica-max-exp (assoc-default 'toNextLevel profile)) ;get max experience
+  (setq habitica-hp (fround (assoc-default 'hp profile))) ;get hp
+  (setq habitica-max-hp (assoc-default 'maxHealth profile)) ;get max hp
+  (setq habitica-mp (fround (assoc-default 'mp profile))) ;get mp
+  (setq habitica-max-mp (assoc-default 'maxMP profile)) ;get max mp
+  (setq habitica-gold (string-to-number (format "%d" (assoc-default 'gp profile)))) ;get gold
+  (setq habitica-silver (string-to-number (format "%d" (* 100 (- (assoc-default 'gp profile) habitica-gold))))) ;get silver
+  )
 
 (defun habitica--format-status-bar (current max length)
   "Formats the current value as an ASCII progress bar.
@@ -619,8 +619,8 @@ NAME is the name of the new task to create."
 LEVEL index from 1 to 3."
   (interactive "nEnter the difficulty level, 1 (easy) 2 (medium) 3 (hard): ")
   (let ((task (habitica--send-request (concat "/tasks/" (org-element-property :ID (org-element-at-point))) "PUT"
-                                     (concat "&priority="
-                                             (format "%s" (car (nth (- level 1) habitica-difficulty)))))))
+                                      (concat "&priority="
+                                              (format "%s" (car (nth (- level 1) habitica-difficulty)))))))
     (beginning-of-line)
     (kill-line)
     (habitica--insert-task task)
@@ -729,7 +729,11 @@ TEXT is the checklist item name."
 TEXT is the checklist item new name."
   (interactive "sEnter the new item name: ")
   (let ((task-id (habitica--get-current-task-id))
-        (done (org-at-item-checkbox-p)))
+        (done nil))
+    ;; Determine if the item is checked
+    (setq done (save-excursion
+                 (goto-char (line-end-position))
+                 (search-backward "- [X]" (line-beginning-position) t)))
     (habitica--send-request (concat "/tasks/"
                                     task-id
                                     "/checklist/"
@@ -742,7 +746,7 @@ TEXT is the checklist item new name."
                     (if done
                         "X"
                       " ")
-                      "] " text))))
+                    "] " text))))
 
 (defun habitica-delete-item-from-checklist ()
   "Delete checklist item under cursor."
