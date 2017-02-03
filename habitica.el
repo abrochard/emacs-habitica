@@ -728,16 +728,21 @@ TEXT is the checklist item name."
 
 TEXT is the checklist item new name."
   (interactive "sEnter the new item name: ")
-  (let ((task-id (habitica--get-current-task-id)))
+  (let ((task-id (habitica--get-current-task-id))
+        (done (org-at-item-checkbox-p)))
     (habitica--send-request (concat "/tasks/"
                                     task-id
                                     "/checklist/"
                                     (habitica--get-checklist-item-id
                                      task-id
                                      (habitica--get-current-checklist-item-index)))
-                            "PUT" (concat "text=" text)))
-  ;; TODO rename element
-  )
+                            "PUT" (concat "text=" text))
+    (kill-region (line-beginning-position) (line-end-position))
+    (insert (concat "   - ["
+                    (if done
+                        "X"
+                      " ")
+                      "] " text))))
 
 (defun habitica-delete-item-from-checklist ()
   "Delete checklist item under cursor."
