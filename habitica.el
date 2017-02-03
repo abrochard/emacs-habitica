@@ -224,6 +224,23 @@ DATA is the form to be sent as x-www-form-urlencoded."
   "Gets all the user's tasks."
   (habitica--send-request "/tasks/user" "GET" ""))
 
+(defun habitica--get-task (id)
+  "Get a task from task id.
+
+ID is the task id."
+  (habitica--send-request (concat "/tasks/" id) "GET" ""))
+
+(defun habitica--get-checklist-item-id (task-id index)
+  "Get the checklist item id of a task based on the task id and the item index.
+
+TASK-ID is the task id.
+INDEX is the checklist item index."
+  (assoc-default 'id
+                 (nth index
+                      (append (assoc-default 'checklist
+                                             (habitica--get-task task-id))
+                              nil))))
+
 (defun habitica--insert-todo (task)
   "Logic to insert TODO or DONE for a task.
 
@@ -355,6 +372,21 @@ DOWN is optional, in case of a habit, if you want to be able to downvote the tas
   (save-excursion
     (progn (re-search-backward "^\* " (point-min) t)
            (car (org-get-tags-at)))))
+
+(defun habitica--get-current-task-id ()
+  "Get the task id for the task under cursor."
+  (save-excursion
+    (progn (search-backward "** " (point-min) t)
+           (org-element-property :ID (org-element-at-point)))))
+
+(defun habitica--get-current-checklist-item-index ()
+  "Get the index of the checklist iterm under cursor."
+  (let ((current-line (org-current-line))
+        (top-line 0))
+    (save-excursion
+      (search-backward ":END:" (point-min) t)
+      (setq top-line (org-current-line)))
+    (- current-line (+ 1 top-line))))
 
 (defun habitica--score-task (id direction)
   "Send a post request to score a task.
@@ -668,12 +700,15 @@ NAME is the name of the new tag."
 (defun habitica-score-checklist-item ()
   "Score the checklist item under the cursor."
   (interactive)
-  (habitica--send-request (concat "/tasks/"
-                                  (org-element-property :ID (org-element-at-point))
-                                  "/checklist/"
-                                  (org-element-property :checklist-id (org-element-at-point))
-                                  "/score")
-                          "POST" "")
+  (let ((task-id (habitica--get-current-task-id)))
+    (habitica--send-request (concat "/tasks/"
+                                    task-id
+                                    "/checklist/"
+                                    (habitica--get-checklist-item-id
+                                     task-id
+                                     (habitica--get-current-checklist-item-index))
+                                    "/score")
+                            "POST" ""))
   (org-toggle-checkbox))
 
 (defun habitica-add-item-to-checklist (text)
