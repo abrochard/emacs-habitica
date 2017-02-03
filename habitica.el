@@ -717,34 +717,41 @@ NAME is the name of the new tag."
 TEXT is the checklist item name."
   (interactive "sEnter the item name: ")
   (habitica--send-request (concat "/tasks/"
-                                  (org-element-property :ID (org-element-at-point))
+                                  (habitica--get-current-task-id)
                                   "/checklist/")
                           "POST" (concat "text=" text))
   ;; TODO insert element
-  )
+  (org-update-checkbox-count))
 
 (defun habitica-rename-item-on-checklist (text)
   "Rename the checklist item under the cursor.
 
 TEXT is the checklist item new name."
   (interactive "sEnter the new item name: ")
-  (habitica--send-request (concat "/tasks/"
-                                  (org-element-property :ID (org-element-at-point))
-                                  "/checklist/"
-                                  (org-element-property :checklist-id (org-element-at-point)))
-                          "PUT" (concat "text=" text))
+  (let ((task-id (habitica--get-current-task-id)))
+    (habitica--send-request (concat "/tasks/"
+                                    task-id
+                                    "/checklist/"
+                                    (habitica--get-checklist-item-id
+                                     task-id
+                                     (habitica--get-current-checklist-item-index)))
+                            "PUT" (concat "text=" text)))
   ;; TODO rename element
   )
 
 (defun habitica-delete-item-from-checklist ()
   "Delete checklist item under cursor."
   (interactive)
-  (habitica--send-request (concat "/tasks/"
-                                  (org-element-property :ID (org-element-at-point))
-                                  "/checklist/"
-                                  (org-element-property :checklist-id (org-element-at-point)))
-                          "DELETE" "")
-  (kill-region (line-beginning-position) (+ 1 (line-end-position))))
+  (let ((task-id (habitica--get-current-task-id)))
+    (habitica--send-request (concat "/tasks/"
+                                    task-id
+                                    "/checklist/"
+                                    (habitica--get-checklist-item-id
+                                     task-id
+                                     (habitica--get-current-checklist-item-index)))
+                            "DELETE" ""))
+  (kill-region (line-beginning-position) (+ 1 (line-end-position)))
+  (org-update-checkbox-count))
 
 
 (defun habitica-login (username)
