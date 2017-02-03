@@ -665,6 +665,52 @@ NAME is the name of the new tag."
                             "DELETE" "")
     (org-set-tags-to (delete (nth index (org-get-tags)) (org-get-tags)))))
 
+(defun habitica-score-checklist-item ()
+  "Score the checklist item under the cursor."
+  (interactive)
+  (habitica--send-request (concat "/tasks/"
+                                  (org-element-property :ID (org-element-at-point))
+                                  "/checklist/"
+                                  (org-element-property :checklist-id (org-element-at-point))
+                                  "/score")
+                          "POST" "")
+  (org-toggle-checkbox))
+
+(defun habitica-add-item-to-checklist (text)
+  "Add a checklist item to the task under the cursor.
+
+TEXT is the checklist item name."
+  (interactive "sEnter the item name: ")
+  (habitica--send-request (concat "/tasks/"
+                                  (org-element-property :ID (org-element-at-point))
+                                  "/checklist/")
+                          "POST" (concat "text=" text))
+  ;; TODO insert element
+  )
+
+(defun habitica-rename-item-on-checklist (text)
+  "Rename the checklist item under the cursor.
+
+TEXT is the checklist item new name."
+  (interactive "sEnter the new item name: ")
+  (habitica--send-request (concat "/tasks/"
+                                  (org-element-property :ID (org-element-at-point))
+                                  "/checklist/"
+                                  (org-element-property :checklist-id (org-element-at-point)))
+                          "PUT" (concat "text=" text))
+  ;; TODO rename element
+  )
+
+(defun habitica-delete-item-from-checklist ()
+  "Delete checklist item under cursor."
+  (interactive)
+  (habitica--send-request (concat "/tasks/"
+                                  (org-element-property :ID (org-element-at-point))
+                                  "/checklist/"
+                                  (org-element-property :checklist-id (org-element-at-point)))
+                          "DELETE" "")
+  (kill-region (line-beginning-position) (+ 1 (line-end-position))))
+
 
 (defun habitica-login (username)
   "Login and retrives the user id and api token.
