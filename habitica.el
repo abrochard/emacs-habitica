@@ -61,6 +61,7 @@
 ;; C-x t b => buy reward
 ;; C-x t a => add a tag to the task
 ;; C-x t A => remove a tag from the task
+;; C-x t c => Score a checklist item
 ;; C-x t g => refresh
 ;;
 
@@ -152,6 +153,7 @@
     (define-key map "i"         #'habitica-set-difficulty)
     (define-key map "a"         #'habitica-add-tag-to-task)
     (define-key map "A"         #'habitica-remove-tag-from-task)
+    (define-key map "c"         #'habitica-score-checklist-item)
     map)
   "Keymap of habitica interactive commands.")
 
@@ -189,6 +191,11 @@
      ["Remove a tag from task" habitica-remove-tag-from-task]
      ["Delete a tag" habitica-delete-tag]
      "---"
+     ["Score a checklist item" habitica-score-checklist-item]
+     ["Add a checklist item" habitica-add-item-to-checklist]
+     ["Rename a checklist item" habitica-rename-item-on-checklist]
+     ["Delete a checklist item" habitica-delete-item-from-checklist]
+     "---"
      ["Refresh tasks" habitica-tasks t]))
   "Menu of command `habitica-mode'.")
 
@@ -224,6 +231,23 @@ DATA is the form to be sent as x-www-form-urlencoded."
   "Gets all the user's tasks."
   (habitica--send-request "/tasks/user" "GET" ""))
 
+(defun habitica--get-task (id)
+  "Get a task from task id.
+
+ID is the task id."
+  (habitica--send-request (concat "/tasks/" id) "GET" ""))
+
+(defun habitica--get-checklist-item-id (task-id index)
+  "Get the checklist item id of a task based on the task id and the item index.
+
+TASK-ID is the task id.
+INDEX is the checklist item index."
+  (assoc-default 'id
+                 (nth index
+                      (append (assoc-default 'checklist
+                                             (habitica--get-task task-id))
+                              nil))))
+
 (defun habitica--insert-todo (task)
   "Logic to insert TODO or DONE for a task.
 
@@ -240,6 +264,22 @@ TASK is the parsed JSON response."
 TASK is the parsed JSON response."
   (if (and (assoc-default 'date task) (< 1 (length (assoc-default 'date task))))
       (insert (concat "   DEADLINE: <" (assoc-default 'date task) ">\n"))))
+
+(defun habitica--insert-checklist (task)
+  "Insert the checklist content of the task as an org check list.
+
+TASK is the parsed JSON resonse."
+  (insert " [/]\n")
+  ;; (insert (format "%s" (assoc-default 'checklist task)))
+  (dolist (check (append (assoc-default 'checklist task) nil))
+    (insert (concat "   - ["
+                    (if (eq (assoc-default 'completed check) t)
+                        "X"
+                      " ")
+                    "] "
+                    (assoc-default 'text check)
+                    " \n")))
+  (org-update-checkbox-count))
 
 (defun habitica--insert-tags (task)
   "Insert the tags and difficulty for a particular task.
@@ -288,6 +328,8 @@ TASK is the parsed JSON reponse."
 TASK is the parsed JSON response."
   (habitica--insert-todo task)
   (insert (assoc-default 'text task))
+  (if (< 0 (length (assoc-default 'checklist task)))
+      (habitica--insert-checklist task))
   (insert "\n")
   (habitica--insert-deadline task)
   (habitica--insert-tags task)
@@ -296,7 +338,7 @@ TASK is the parsed JSON response."
   (if habitica-turn-on-highlighting
       (catch 'aaa
         (habitica--highlight-task task))
-      )
+    )
   )
 
 (defun habitica--parse-tasks (tasks order)
@@ -337,6 +379,21 @@ DOWN is optional, in case of a habit, if you want to be able to downvote the tas
   (save-excursion
     (progn (re-search-backward "^\* " (point-min) t)
            (car (org-get-tags-at)))))
+
+(defun habitica--get-current-task-id ()
+  "Get the task id for the task under cursor."
+  (save-excursion
+    (progn (search-backward "** " (point-min) t)
+           (org-element-property :ID (org-element-at-point)))))
+
+(defun habitica--get-current-checklist-item-index ()
+  "Get the index of the checklist iterm under cursor."
+  (let ((current-line (org-current-line))
+        (top-line 0))
+    (save-excursion
+      (search-backward ":END:" (point-min) t)
+      (setq top-line (org-current-line)))
+    (- current-line (+ 1 top-line))))
 
 (defun habitica--score-task (id direction)
   "Send a post request to score a task.
@@ -389,16 +446,16 @@ TO-NEXT-LEVEL is the experience required to reach the next level."
   "Set the profile variables.
 
 PROFILE is the JSON formatted response."
-    (setq habitica-level (assoc-default 'lvl profile)) ;get level
-    (setq habitica-exp (fround (assoc-default 'exp profile))) ;get exp
-    (setq habitica-max-exp (assoc-default 'toNextLevel profile)) ;get max experience
-    (setq habitica-hp (fround (assoc-default 'hp profile))) ;get hp
-    (setq habitica-max-hp (assoc-default 'maxHealth profile)) ;get max hp
-    (setq habitica-mp (fround (assoc-default 'mp profile))) ;get mp
-    (setq habitica-max-mp (assoc-default 'maxMP profile)) ;get max mp
-    (setq habitica-gold (string-to-number (format "%d" (assoc-default 'gp profile)))) ;get gold
-    (setq habitica-silver (string-to-number (format "%d" (* 100 (- (assoc-default 'gp profile) habitica-gold))))) ;get silver
-    )
+  (setq habitica-level (assoc-default 'lvl profile)) ;get level
+  (setq habitica-exp (fround (assoc-default 'exp profile))) ;get exp
+  (setq habitica-max-exp (assoc-default 'toNextLevel profile)) ;get max experience
+  (setq habitica-hp (fround (assoc-default 'hp profile))) ;get hp
+  (setq habitica-max-hp (assoc-default 'maxHealth profile)) ;get max hp
+  (setq habitica-mp (fround (assoc-default 'mp profile))) ;get mp
+  (setq habitica-max-mp (assoc-default 'maxMP profile)) ;get max mp
+  (setq habitica-gold (string-to-number (format "%d" (assoc-default 'gp profile)))) ;get gold
+  (setq habitica-silver (string-to-number (format "%d" (* 100 (- (assoc-default 'gp profile) habitica-gold))))) ;get silver
+  )
 
 (defun habitica--format-status-bar (current max length)
   "Formats the current value as an ASCII progress bar.
@@ -569,8 +626,8 @@ NAME is the name of the new task to create."
 LEVEL index from 1 to 3."
   (interactive "nEnter the difficulty level, 1 (easy) 2 (medium) 3 (hard): ")
   (let ((task (habitica--send-request (concat "/tasks/" (org-element-property :ID (org-element-at-point))) "PUT"
-                                     (concat "&priority="
-                                             (format "%s" (car (nth (- level 1) habitica-difficulty)))))))
+                                      (concat "&priority="
+                                              (format "%s" (car (nth (- level 1) habitica-difficulty)))))))
     (beginning-of-line)
     (kill-line)
     (habitica--insert-task task)
@@ -646,6 +703,71 @@ NAME is the name of the new tag."
                                     (car (rassoc (nth index (org-get-tags)) habitica-tags)))
                             "DELETE" "")
     (org-set-tags-to (delete (nth index (org-get-tags)) (org-get-tags)))))
+
+(defun habitica-score-checklist-item ()
+  "Score the checklist item under the cursor."
+  (interactive)
+  (let ((task-id (habitica--get-current-task-id)))
+    (habitica--send-request (concat "/tasks/"
+                                    task-id
+                                    "/checklist/"
+                                    (habitica--get-checklist-item-id
+                                     task-id
+                                     (habitica--get-current-checklist-item-index))
+                                    "/score")
+                            "POST" ""))
+  (org-toggle-checkbox))
+
+(defun habitica-add-item-to-checklist (text)
+  "Add a checklist item to the task under the cursor.
+
+TEXT is the checklist item name."
+  (interactive "sEnter the item name: ")
+  (habitica--send-request (concat "/tasks/"
+                                  (habitica--get-current-task-id)
+                                  "/checklist/")
+                          "POST" (concat "text=" text))
+  ;; TODO find a more graceful way to handle this
+  (habitica-tasks))
+
+(defun habitica-rename-item-on-checklist (text)
+  "Rename the checklist item under the cursor.
+
+TEXT is the checklist item new name."
+  (interactive "sEnter the new item name: ")
+  (let ((task-id (habitica--get-current-task-id))
+        (done nil))
+    ;; Determine if the item is checked
+    (setq done (save-excursion
+                 (goto-char (line-end-position))
+                 (search-backward "- [X]" (line-beginning-position) t)))
+    (habitica--send-request (concat "/tasks/"
+                                    task-id
+                                    "/checklist/"
+                                    (habitica--get-checklist-item-id
+                                     task-id
+                                     (habitica--get-current-checklist-item-index)))
+                            "PUT" (concat "text=" text))
+    (kill-region (line-beginning-position) (line-end-position))
+    (insert (concat "   - ["
+                    (if done
+                        "X"
+                      " ")
+                    "] " text))))
+
+(defun habitica-delete-item-from-checklist ()
+  "Delete checklist item under cursor."
+  (interactive)
+  (let ((task-id (habitica--get-current-task-id)))
+    (habitica--send-request (concat "/tasks/"
+                                    task-id
+                                    "/checklist/"
+                                    (habitica--get-checklist-item-id
+                                     task-id
+                                     (habitica--get-current-checklist-item-index)))
+                            "DELETE" ""))
+  (kill-region (line-beginning-position) (+ 1 (line-end-position)))
+  (org-update-checkbox-count))
 
 
 (defun habitica-login (username)
