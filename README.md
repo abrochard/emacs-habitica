@@ -1,8 +1,7 @@
-# emacs-habitica
-Emacs extension for [Habitica](https://habitica.com/), a RPG style habit tracker and todo list.
-
 [![MELPA](https://melpa.org/packages/habitica-badge.svg)](https://melpa.org/#/habitica)
 
+# emacs-habitica
+Emacs extension for [Habitica](https://habitica.com/), a RPG style habit tracker and todo list.
 
 ## Installation
 Install from MELPA with
