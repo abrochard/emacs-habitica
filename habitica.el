@@ -463,6 +463,7 @@ PROFILE is the JSON formatted response."
 CURRENT is the current value
 MAX is the max value
 LENGTH is the total number of characters in the bar."
+  (if (< max current) (setq max current) nil)
   (concat "["
           (make-string (truncate (fround (* (/ current max) length))) ?#)
           (make-string (truncate (fround (* (/ (- max current) max) length))) ?-)
