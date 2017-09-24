@@ -360,7 +360,7 @@ ORDER is the ordered list of ids to print the rewards in."
     (dolist (reward (append rewards nil))
       (if (equal (assoc-default 'id reward) id)
           (progn  (insert "** ")
-                  (insert (assoc-default 'text reward))
+                  (insert (concat (assoc-default 'text reward) " \n"))
                   (org-set-tags-to (format "%d" (assoc-default 'value reward)))
                   (org-set-property "ID" (assoc-default '_id reward)))))))
 
