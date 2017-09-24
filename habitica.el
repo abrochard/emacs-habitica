@@ -360,7 +360,7 @@ ORDER is the ordered list of ids to print the rewards in."
     (dolist (reward (append rewards nil))
       (if (equal (assoc-default 'id reward) id)
           (progn  (insert "** ")
-                  (insert (assoc-default 'text reward))
+                  (insert (concat (assoc-default 'text reward) " \n"))
                   (org-set-tags-to (format "%d" (assoc-default 'value reward)))
                   (org-set-property "ID" (assoc-default '_id reward)))))))
 
@@ -463,6 +463,7 @@ PROFILE is the JSON formatted response."
 CURRENT is the current value
 MAX is the max value
 LENGTH is the total number of characters in the bar."
+  (if (< max current) (setq max current) nil)
   (concat "["
           (make-string (truncate (fround (* (/ current max) length))) ?#)
           (make-string (truncate (fround (* (/ (- max current) max) length))) ?-)
