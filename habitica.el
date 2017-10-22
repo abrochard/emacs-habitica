@@ -105,7 +105,7 @@
 (require 'json)
 (require 'org)
 (require 'org-element)
-
+(require 'url-util)
 
 ;;;; Variables
 (defvar habitica-base "https://habitica.com/api/v3")
@@ -371,8 +371,8 @@ TYPE is the type of task that you want to create (habit, daily, or todo)
 NAME is the task name
 DOWN is optional, in case of a habit, if you want to be able to downvote the task."
   (if down
-      (habitica--send-request "/tasks/user" "POST" (concat "type=" type "&text=" name "&down=" down))
-    (habitica--send-request "/tasks/user" "POST" (concat "type=" type "&text=" name))))
+      (habitica--send-request "/tasks/user" "POST" (concat "type=" type "&text=" (url-encode-url name) "&down=" down))
+    (habitica--send-request "/tasks/user" "POST" (concat "type=" type "&text=" (url-encode-url name)))))
 
 (defun habitica--get-current-type ()
   "Get the current type based on the cursor position."
