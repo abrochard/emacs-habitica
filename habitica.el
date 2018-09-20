@@ -447,11 +447,11 @@ TO-NEXT-LEVEL is the experience required to reach the next level."
 
 PROFILE is the JSON formatted response."
   (setq habitica-level (assoc-default 'lvl profile)) ;get level
-  (setq habitica-exp (fround (assoc-default 'exp profile))) ;get exp
+  (setq habitica-exp (round (assoc-default 'exp profile))) ;get exp
   (setq habitica-max-exp (assoc-default 'toNextLevel profile)) ;get max experience
-  (setq habitica-hp (fround (assoc-default 'hp profile))) ;get hp
+  (setq habitica-hp (round (assoc-default 'hp profile))) ;get hp
   (setq habitica-max-hp (assoc-default 'maxHealth profile)) ;get max hp
-  (setq habitica-mp (fround (assoc-default 'mp profile))) ;get mp
+  (setq habitica-mp (round (assoc-default 'mp profile))) ;get mp
   (setq habitica-max-mp (assoc-default 'maxMP profile)) ;get max mp
   (setq habitica-gold (string-to-number (format "%d" (assoc-default 'gp profile)))) ;get gold
   (setq habitica-silver (string-to-number (format "%d" (* 100 (- (assoc-default 'gp profile) habitica-gold))))) ;get silver
@@ -465,8 +465,8 @@ MAX is the max value
 LENGTH is the total number of characters in the bar."
   (if (< max current) (setq max current) nil)
   (concat "["
-          (make-string (truncate (fround (* (/ current max) length))) ?#)
-          (make-string (truncate (fround (* (/ (- max current) max) length))) ?-)
+          (make-string (truncate (round (* (/ current max) length))) ?#)
+          (make-string (truncate (round (* (/ (- max current) max) length))) ?-)
           "]"))
 
 (defun habitica--parse-profile (stats show-notification)
