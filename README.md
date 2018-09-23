@@ -45,7 +45,7 @@ You can find your uid and token by following the instructions [here](http://habi
 
 ### Completed Todos Section
 
-You can view your completed to dos by setting the
+You can view your completed to dos by adding following to init.el
 
 ```lisp
 (setq habitica-show-completed-todo t)

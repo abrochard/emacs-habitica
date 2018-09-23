@@ -76,7 +76,7 @@
 ;; You can find your uid and token by following the instructions [here](http://habitica.wikia.com/wiki/API_Options).
 ;;
 ;; Completed Todos Section
-;; You can view your completed to dos by setting the
+;; You can view your completed to dos by adding following to init.el
 ;;
 ;; (setq habitica-show-completed-todo t)
 ;;
@@ -176,7 +176,7 @@
       (define-key habitica-mode-map key habitica-command-map))
     (set-default variable key)))
 
-(defcustom habitica-show-completed-todo t
+(defcustom habitica-show-completed-todo nil
   "if non-nil show last 30 completed todos"
   :group 'habitica
   :type 'boolean
