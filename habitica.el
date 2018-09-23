@@ -74,8 +74,15 @@
 ;; (setq habitica-token "456")
 ;;
 ;; You can find your uid and token by following the instructions [here](http://habitica.wikia.com/wiki/API_Options).
-
-;; Highlithing
+;;
+;; Completed Todos Section
+;; You can view your completed to dos by setting the
+;;
+;; (setq habitica-show-completed-todo t)
+;;
+;; The variable is customized using the Emacs customization interface under the group `habitica`
+;;
+;; Highlighting
 ;; If you want to try highlighting tasks based on their value
 ;;
 ;; (setq habitica-turn-on-highlighting t)
