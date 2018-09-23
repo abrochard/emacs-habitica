@@ -74,8 +74,15 @@
 ;; (setq habitica-token "456")
 ;;
 ;; You can find your uid and token by following the instructions [here](http://habitica.wikia.com/wiki/API_Options).
-
-;; Highlithing
+;;
+;; Completed Todos Section
+;; You can view your completed to dos by adding following to init.el
+;;
+;; (setq habitica-show-completed-todo t)
+;;
+;; The variable is customized using the Emacs customization interface under the group `habitica`
+;;
+;; Highlighting
 ;; If you want to try highlighting tasks based on their value
 ;;
 ;; (setq habitica-turn-on-highlighting t)
@@ -169,6 +176,11 @@
       (define-key habitica-mode-map key habitica-command-map))
     (set-default variable key)))
 
+(defcustom habitica-show-completed-todo nil
+  "if non-nil show last 30 completed todos"
+  :group 'habitica
+  :type 'boolean
+  )
 
 ;;; Global Habitica menu
 (defvar habitica-mode-menu-map
@@ -230,6 +242,10 @@ DATA is the form to be sent as x-www-form-urlencoded."
 (defun habitica--get-tasks ()
   "Gets all the user's tasks."
   (habitica--send-request "/tasks/user" "GET" ""))
+
+(defun habitica--get-completed-tasks ()
+  "Gets all the completed user's tasks."
+  (habitica--send-request "/tasks/user?type=completedTodos" "GET" ""))
 
 (defun habitica--get-task (id)
   "Get a task from task id.
@@ -350,6 +366,14 @@ ORDER is the ordered list of ids to print the task in."
     (dolist (value (append tasks nil))
       (if (equal (assoc-default 'id value) id)
           (habitica--insert-task value)))))
+
+
+(defun habitica--parse-completed-tasks (tasks)
+  "Parse the completed tasks to 'org-mode' format.
+
+TASKS is the list of tasks from the JSON response"
+  (dolist (value (append tasks nil))
+    (habitica--insert-task value)))
 
 (defun habitica--parse-rewards (rewards order)
   "Parse the rewards to 'org-mode' format.
@@ -817,6 +841,10 @@ USERNAME is the user's username."
       (habitica--parse-tasks habitica-data (assoc-default 'dailys tasksOrder))
       (insert "* To-Dos :todo:\n")
       (habitica--parse-tasks habitica-data (assoc-default 'todos tasksOrder))
+      (when habitica-show-completed-todo
+       (insert "* Completed To-Dos :done:\n")
+       (habitica--parse-completed-tasks (habitica--get-completed-tasks))
+       )
       (insert "* Rewards :rewards:\n")
       (habitica--parse-rewards habitica-data (assoc-default 'rewards tasksOrder))))
   (org-align-all-tags)
