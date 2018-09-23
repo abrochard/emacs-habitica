@@ -825,8 +825,7 @@ USERNAME is the user's username."
   (insert "#+TITLE: Habitica Dashboard\n\n")
   (habitica--get-tags)
   (let ((habitica-data (habitica--get-tasks))
-        (habitica-profile (habitica--get-profile))
-        (habitica-completed-task (habitica--get-completed-tasks)))
+        (habitica-profile (habitica--get-profile)))
     (habitica--parse-profile (assoc-default 'stats habitica-profile) nil)
     (let ((tasksOrder (assoc-default 'tasksOrder habitica-profile)))
       (insert "* Habits :habit:\n")
@@ -837,7 +836,7 @@ USERNAME is the user's username."
       (habitica--parse-tasks habitica-data (assoc-default 'todos tasksOrder))
       (when habitica-show-completed-todo
        (insert "* Completed To-Dos :done:\n")
-       (habitica--parse-completed-tasks habitica-completed-task)
+       (habitica--parse-completed-tasks (habitica--get-completed-tasks))
        )
       (insert "* Rewards :rewards:\n")
       (habitica--parse-rewards habitica-data (assoc-default 'rewards tasksOrder))))
