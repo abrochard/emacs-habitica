@@ -489,8 +489,8 @@ MAX is the max value
 LENGTH is the total number of characters in the bar."
   (if (< max current) (setq max current) nil)
   (concat "["
-          (make-string (truncate (round (* (/ current max) length))) ?#)
-          (make-string (truncate (round (* (/ (- max current) max) length))) ?-)
+          (make-string (truncate (round (* (/ (float current) max) length))) ?#)
+          (make-string (truncate (round (* (/ (float (- max current)) max) length))) ?-)
           "]"))
 
 (defun habitica--parse-profile (stats show-notification)
