@@ -298,16 +298,25 @@ TASK is the parsed JSON resonse."
                     " \n")))
   (org-update-checkbox-count))
 
+(defun habitica--tag-explainer (id)
+  "Transform `id' to tag name."
+  (assoc-default (format "%s" id) habitica-tags))
+
+(defun habitica--priority-explainer (number)
+  "Transform `number' to priority name."
+  (assoc-default number habitica-difficulty))
+
 (defun habitica--insert-tags (task)
   "Insert the tags and difficulty for a particular task.
 
 TASK is the parsed JSON reponse."
-  (org-set-tags-to (append
-                    (mapcar (lambda (arg)
-                              (assoc-default (format "%s" arg) habitica-tags))
-                            (assoc-default 'tags task))
-                    (list (assoc-default (assoc-default 'priority task) habitica-difficulty))
-                    (habitica--get-streak-as-list task))))
+  (let* ((tag-ids (assoc-default 'tags task))
+         (tags (mapcar #'habitica--tag-explainer tag-ids))
+         (priority (habitica--priority-explainer (assoc-default 'priority task))))
+    (org-set-tags-to (append
+                      tags
+                      (list priority)
+                      (habitica--get-streak-as-list task)))))
 
 (defun habitica--get-streak-as-list (task)
   "Get the streak formated as a single element list.
