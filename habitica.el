@@ -279,8 +279,8 @@ TASK is the parsed JSON response."
   "Insert the deadline for a particular task.
 
 TASK is the parsed JSON response."
-  (if (and (assoc-default 'date task) (< 1 (length (assoc-default 'date task))))
-      (insert (concat "   DEADLINE: <" (assoc-default 'date task) ">\n"))))
+  (when (and (assoc-default 'date task) (< 1 (length (assoc-default 'date task))))
+    (org-deadline 0 (assoc-default 'date task))))
 
 (defun habitica--insert-checklist (task)
   "Insert the checklist content of the task as an org check list.
