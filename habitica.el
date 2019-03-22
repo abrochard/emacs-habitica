@@ -349,8 +349,9 @@ TASK is the parsed JSON response."
   (insert "\n")
   (habitica--insert-deadline task)
   (habitica--insert-tags task)
-  (org-set-property "ID" (assoc-default '_id task))
-  (org-set-property "value" (format "%s" (assoc-default 'value task)))
+  (org-set-property "HABITICA_ID" (assoc-default '_id task))
+  (org-set-property "HABITICA_VALUE" (format "%s" (assoc-default 'value task)))
+  (org-set-property "HABITICA_TYPE" (format "%s" (assoc-default 'type task)))
   (if habitica-turn-on-highlighting
       (catch 'aaa
         (habitica--highlight-task task))
@@ -367,6 +368,14 @@ ORDER is the ordered list of ids to print the task in."
       (if (equal (assoc-default 'id value) id)
           (habitica--insert-task value)))))
 
+(defun habitica-insert-selected-task (tasks)
+  "select a task from `tasks' and insert it with 'org-mode' format.
+
+TASKS is the list of tasks from the JSON response."
+  (interactive)
+  (let* ((tasks (habitica--get-tasks))
+         (task (completing-read "Select a task: " tasks)))
+    (habitica--insert-task task)))
 
 (defun habitica--parse-completed-tasks (tasks)
   "Parse the completed tasks to 'org-mode' format.
@@ -386,7 +395,7 @@ ORDER is the ordered list of ids to print the rewards in."
           (progn  (insert "** ")
                   (insert (concat (assoc-default 'text reward) " \n"))
                   (org-set-tags-to (format "%d" (assoc-default 'value reward)))
-                  (org-set-property "ID" (assoc-default '_id reward)))))))
+                  (org-set-property "HABITICA_ID" (assoc-default '_id reward)))))))
 
 (defun habitica--create-task (type name &optional down)
   "Send a post request to create a new user task.
@@ -408,7 +417,7 @@ DOWN is optional, in case of a habit, if you want to be able to downvote the tas
   "Get the task id for the task under cursor."
   (save-excursion
     (progn (search-backward "** " (point-min) t)
-           (org-element-property :ID (org-element-at-point)))))
+           (org-element-property :HABITICA_ID (org-element-at-point)))))
 
 (defun habitica--get-current-checklist-item-index ()
   "Get the index of the checklist iterm under cursor."
@@ -595,21 +604,21 @@ NEW-TAG is the new name to give to the tag."
 (defun habitica-up-task ()
   "Up or complete a task."
   (interactive)
-  (let ((result (habitica--score-task (org-element-property :ID (org-element-at-point)) "up"))
-        (current-value (string-to-number (org-element-property :VALUE (org-element-at-point)))))
+  (let ((result (habitica--score-task (org-element-property :HABITICA_ID (org-element-at-point)) "up"))
+        (current-value (string-to-number (org-element-property :HABITICA_VALUE (org-element-at-point)))))
     (if (< habitica-habit-threshold (+ current-value (assoc-default 'delta result)))
         (org-todo "DONE"))
-    (org-set-property "value" (number-to-string (+ current-value (assoc-default 'delta result)))))
+    (org-set-property "HABITICA_VALUE" (number-to-string (+ current-value (assoc-default 'delta result)))))
   (habitica--refresh-profile))
 
 (defun habitica-down-task ()
   "Down or - a task."
   (interactive)
-  (let ((result (habitica--score-task (org-element-property :ID (org-element-at-point)) "down"))
-        (current-value (string-to-number (org-element-property :VALUE (org-element-at-point)))))
+  (let ((result (habitica--score-task (org-element-property :HABITICA_ID (org-element-at-point)) "down"))
+        (current-value (string-to-number (org-element-property :HABITICA_VALUE (org-element-at-point)))))
     (if (> habitica-habit-threshold (+ current-value (assoc-default 'delta result)))
         (org-todo "TODO"))
-    (org-set-property "value" (number-to-string (+ current-value (assoc-default 'delta result)))))
+    (org-set-property "HABITICA_VALUE" (number-to-string (+ current-value (assoc-default 'delta result)))))
   (habitica--refresh-profile))
 
 (defun habitica-todo-task ()
@@ -643,14 +652,14 @@ NAME is the name of the new task to create."
   "Set a deadline for a todo task."
   (interactive)
   (let ((date (replace-regexp-in-string "[a-zA-Z:.<> ]" "" (org-deadline nil))))
-    (habitica--send-request (concat "/tasks/" (org-element-property :ID (org-element-at-point))) "PUT" (concat "&date=" date))))
+    (habitica--send-request (concat "/tasks/" (org-element-property :HABITICA_ID (org-element-at-point))) "PUT" (concat "&date=" date))))
 
 (defun habitica-set-difficulty (level)
   "Set a difficulty level for a task.
 
 LEVEL index from 1 to 3."
   (interactive "nEnter the difficulty level, 1 (easy) 2 (medium) 3 (hard): ")
-  (let ((task (habitica--send-request (concat "/tasks/" (org-element-property :ID (org-element-at-point))) "PUT"
+  (let ((task (habitica--send-request (concat "/tasks/" (org-element-property :HABITICA_ID (org-element-at-point))) "PUT"
                                       (concat "&priority="
                                               (format "%s" (car (nth (- level 1) habitica-difficulty)))))))
     (beginning-of-line)
@@ -661,7 +670,7 @@ LEVEL index from 1 to 3."
 (defun habitica-delete-task ()
   "Delete the task under the cursor."
   (interactive)
-  (habitica--send-request (concat "/tasks/" (org-element-property :ID (org-element-at-point))) "DELETE" "")
+  (habitica--send-request (concat "/tasks/" (org-element-property :HABITICA_ID (org-element-at-point))) "DELETE" "")
   (org-cut-subtree))
 
 (defun habitica-buy-reward ()
@@ -712,7 +721,7 @@ NAME is the name of the new tag."
   (let ((index (habitica--choose-tag (mapcar 'cdr habitica-tags)
                                      "Select the index of the tag to add: ")))
     (habitica--send-request (concat "/tasks/"
-                                    (org-element-property :ID (org-element-at-point))
+                                    (org-element-property :HABITICA_ID (org-element-at-point))
                                     "/tags/"
                                     (format "%s" (car (nth index habitica-tags))))
                             "POST" "")
@@ -723,7 +732,7 @@ NAME is the name of the new tag."
   (interactive)
   (let ((index (habitica--choose-tag (org-get-tags) "Select the index of tag to remove: ")))
     (habitica--send-request (concat "/tasks/"
-                                    (org-element-property :ID (org-element-at-point))
+                                    (org-element-property :HABITICA_ID (org-element-at-point))
                                     "/tags/"
                                     (car (rassoc (nth index (org-get-tags)) habitica-tags)))
                             "DELETE" "")
