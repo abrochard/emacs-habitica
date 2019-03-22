@@ -98,6 +98,7 @@
 ;;; Code:
 
 ;;;; Consts
+(require 'cl-lib)
 (defconst habitica-version "1.0" "Habitica version.")
 
 (defgroup habitica nil
@@ -368,14 +369,22 @@ ORDER is the ordered list of ids to print the task in."
       (if (equal (assoc-default 'id value) id)
           (habitica--insert-task value)))))
 
-(defun habitica-insert-selected-task (tasks)
+(defun habitica-insert-selected-task (&optional tasks)
   "select a task from `tasks' and insert it with 'org-mode' format.
 
 TASKS is the list of tasks from the JSON response."
   (interactive)
-  (let* ((tasks (habitica--get-tasks))
-         (task (completing-read "Select a task: " tasks)))
-    (habitica--insert-task task)))
+  (let* ((tasks (or tasks (habitica--get-tasks)))
+         (task-description (completing-read "Select a task: " (mapcar (lambda (task)
+                                                                        (let ((type (assoc-default 'type task))
+                                                                              (text (assoc-default 'text task))
+                                                                              (id (assoc-default 'id task)))
+                                                                          (format "%s:%s:%s" type text id))) tasks)))
+         (task-id (car (last (split-string task-description ":"))))
+         (selected-task (cl-find-if (lambda (task)
+                                     (string= task-id (assoc-default 'id task)))
+                                   tasks)))
+    (habitica--insert-task selected-task)))
 
 (defun habitica--parse-completed-tasks (tasks)
   "Parse the completed tasks to 'org-mode' format.
