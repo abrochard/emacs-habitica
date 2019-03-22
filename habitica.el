@@ -99,6 +99,7 @@
 
 ;;;; Consts
 (defconst habitica-version "1.0" "Habitica version.")
+(defconst habitica-buffer-name "*habitica*" "Habitica buffer name")
 
 (defgroup habitica nil
   "Interface for habitica.com, a RPG based task management system."
@@ -553,10 +554,11 @@ SHOW-NOTIFICATION, if true, it will add notification tags."
 
 (defun habitica--refresh-profile ()
   "Kill the current profile and parse a new one."
-  (save-excursion
-    (progn (re-search-backward "^\* Stats" (point-min) t)
-           (org-cut-subtree)
-           (habitica--parse-profile (assoc-default 'stats (habitica--get-profile)) t))))
+  (with-current-buffer habitica-buffer-name
+    (save-excursion
+      (progn (re-search-backward "^\* Stats" (point-min) t)
+             (org-cut-subtree)
+             (habitica--parse-profile (assoc-default 'stats (habitica--get-profile)) t)))))
 
 (defun habitica--get-tags ()
   "Get the dictionary id/tags."
@@ -641,7 +643,7 @@ NEW-TAG is the new name to give to the tag."
 (defun habitica-todo-task ()
   "Mark the current task as done or todo depending on its current state."
   (interactive)
-  (if (not (equal (buffer-name) "*habitica*"))
+  (if (not (equal (buffer-name) habitica-buffer-name))
       (message "You must be inside the habitica buffer")
     (if (equal (format "%s" (org-element-property :todo-type (org-element-at-point))) "todo")
         (progn (habitica-up-task)
@@ -658,7 +660,7 @@ NEW-TAG is the new name to give to the tag."
 
 NAME is the name of the new task to create."
   (interactive "sEnter the task name: ")
-  (if (not (equal (buffer-name) "*habitica*"))
+  (if (not (equal (buffer-name) habitica-buffer-name))
       (message "You must be inside the habitica buffer")
     (progn (end-of-line)
            (newline)
@@ -851,7 +853,7 @@ USERNAME is the user's username."
   (interactive)
   (if (or (not habitica-uid) (not habitica-token))
       (call-interactively 'habitica-login))
-  (switch-to-buffer "*habitica*")
+  (switch-to-buffer habitica-buffer-name)
   (delete-region (point-min) (point-max))
   (org-mode)
   (habitica-mode)
