@@ -98,7 +98,6 @@
 ;;; Code:
 
 ;;;; Consts
-(require 'cl-lib)
 (defconst habitica-version "1.0" "Habitica version.")
 
 (defgroup habitica nil
