@@ -99,7 +99,6 @@
 
 ;;;; Consts
 (defconst habitica-version "1.0" "Habitica version.")
-(defconst habitica-buffer-name "*habitica*" "Habitica buffer name")
 
 (defgroup habitica nil
   "Interface for habitica.com, a RPG based task management system."
@@ -116,6 +115,7 @@
 (require 'url-util)
 
 ;;;; Variables
+(defvar habitica-buffer-name "*habitica*" "Habitica buffer name")
 (defvar habitica-base "https://habitica.com/api/v3")
 (defvar habitica-uid nil)
 (defvar habitica-token nil)
