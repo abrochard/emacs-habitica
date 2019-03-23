@@ -638,6 +638,11 @@ NEW-TAG is the new name to give to the tag."
       (replace-match (concat ":" new-tag ":"))))
   (org-align-all-tags))
 
+(defun habitica-goto-task (id)
+  "Goto habitica task according to `ID'"
+  (goto-char (point-min))
+  (goto-char (org-find-property "HABITICA_ID" id)))
+
 ;;;; Interactive
 (defun habitica-up-task ()
   "Up or complete a task."
@@ -876,16 +881,22 @@ USERNAME is the user's username."
 
 (defun habitica-task-done-up ()
   "Mark habitic task DONE makes the score up"
-  (let ((habitica-id (org-element-property :HABITICA_ID (org-element-at-point))))
+  (let ((habitica-id (org-element-property :HABITICA_ID (org-element-at-point)))
+        new-score)
     (when (and habitica-id
                org-state
                (string= org-state "DONE"))
       ;; (habitica--score-task habitica-id "up")
       (with-current-buffer habitica-buffer-name
         (save-excursion
-          (goto-char (point-min))
-          (goto-char (org-find-property "HABITICA_ID" habitica-id))
-          (habitica-up-task)))
+          (habitica-goto-task habitica-id)
+          (habitica-up-task)
+          (habitica-goto-task habitica-id)
+          (setq new-score (org-element-property :HABITICA_VALUE (org-element-at-point)))))
+      ;; update the HABITICA_VALUE in origin org files
+      (save-excursion
+        (org-back-to-heading)
+        (org-set-property "HABITICA_VALUE" new-score))
       )))
 
 
