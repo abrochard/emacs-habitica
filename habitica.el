@@ -280,7 +280,7 @@ TASK is the parsed JSON response."
 
 TASK is the parsed JSON response."
   (when (and (assoc-default 'date task) (< 1 (length (assoc-default 'date task))))
-    (org-deadline 0 (assoc-default 'date task))))
+    (org-deadline 4 (assoc-default 'date task))))
 
 (defun habitica--insert-checklist (task)
   "Insert the checklist content of the task as an org check list.
@@ -362,6 +362,8 @@ TASK is the parsed JSON response."
   (org-set-property "HABITICA_ID" (assoc-default '_id task))
   (org-set-property "HABITICA_VALUE" (format "%s" (assoc-default 'value task)))
   (org-set-property "HABITICA_TYPE" (format "%s" (assoc-default 'type task)))
+  (when (string= "daily" (format "%s" (assoc-default 'type task)))
+    (org-schedule 4 "now"))
   (if habitica-turn-on-highlighting
       (catch 'aaa
         (habitica--highlight-task task))
