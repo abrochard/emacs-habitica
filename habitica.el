@@ -443,7 +443,7 @@ DOWN is optional, in case of a habit, if you want to be able to downvote the tas
 
 (defun habitica--get-current-type ()
   "Get the current type based on the cursor position."
-  (if (derived-mode-p 'habitica-mode)
+  (if (habitica-buffer-p)
       (save-excursion
         (progn (re-search-backward "^\* " (point-min) t)
                (car (org-get-tags-at))))
@@ -644,7 +644,8 @@ NEW-TAG is the new name to give to the tag."
   (interactive)
   (let ((result (habitica--score-task (org-element-property :HABITICA_ID (org-element-at-point)) "up"))
         (current-value (string-to-number (org-element-property :HABITICA_VALUE (org-element-at-point)))))
-    (if (< habitica-habit-threshold (+ current-value (assoc-default 'delta result)))
+    (if (and (not (string= (org-get-todo-state) "DONE"))
+             (< habitica-habit-threshold (+ current-value (assoc-default 'delta result))))
         (org-todo "DONE"))
     (org-set-property "HABITICA_VALUE" (number-to-string (+ current-value (assoc-default 'delta result)))))
   (habitica--refresh-profile))
@@ -654,7 +655,8 @@ NEW-TAG is the new name to give to the tag."
   (interactive)
   (let ((result (habitica--score-task (org-element-property :HABITICA_ID (org-element-at-point)) "down"))
         (current-value (string-to-number (org-element-property :HABITICA_VALUE (org-element-at-point)))))
-    (if (> habitica-habit-threshold (+ current-value (assoc-default 'delta result)))
+    (if (and (not (string= (org-get-todo-state) "TODO"))
+             (> habitica-habit-threshold (+ current-value (assoc-default 'delta result))))
         (org-todo "TODO"))
     (org-set-property "HABITICA_VALUE" (number-to-string (+ current-value (assoc-default 'delta result)))))
   (habitica--refresh-profile))
@@ -662,7 +664,7 @@ NEW-TAG is the new name to give to the tag."
 (defun habitica-todo-task ()
   "Mark the current task as done or todo depending on its current state."
   (interactive)
-  (if (not (derived-mode-p 'habitica-mode))
+  (if (not (habitica-buffer-p))
       (message "You must be inside the habitica buffer")
     (if (equal (format "%s" (org-element-property :todo-type (org-element-at-point))) "todo")
         (progn (habitica-up-task)
@@ -679,7 +681,7 @@ NEW-TAG is the new name to give to the tag."
 
 NAME is the name of the new task to create."
   (interactive "sEnter the task name: ")
-  (if (not (derived-mode-p 'habitica-mode))
+  (if (not (habitica-buffer-p))
       (message "You must be inside the habitica buffer")
     (progn (end-of-line)
            (newline)
@@ -866,6 +868,27 @@ USERNAME is the user's username."
       (message "Successfully logged in.")
     (message "Error logging in.")))
 
+(defun habitica-buffer-p (&optional buf)
+  "Judge if `buf' is the habitica buffer"
+  (let ((buf (or buf (buffer-name))))
+    (with-current-buffer buf
+      (string= (buffer-name) habitica-buffer-name))))
+
+(defun habitica-task-done-up ()
+  "Mark habitic task DONE makes the score up"
+  (let ((habitica-id (org-element-property :HABITICA_ID (org-element-at-point))))
+    (when (and habitica-id
+               org-state
+               (string= org-state "DONE"))
+      ;; (habitica--score-task habitica-id "up")
+      (with-current-buffer habitica-buffer-name
+        (save-excursion
+          (goto-char (point-min))
+          (goto-char (org-find-property "HABITICA_ID" habitica-id))
+          (habitica-up-task)))
+      )))
+
+
 ;;;###autoload
 (defun habitica-tasks ()
   "Main function to summon the habitica buffer."
@@ -895,7 +918,14 @@ USERNAME is the user's username."
       (insert "* Rewards :rewards:\n")
       (habitica--parse-rewards habitica-data (assoc-default 'rewards tasksOrder))))
   (org-align-all-tags)
-  (org-content))
+  (org-content)
+  (add-hook 'org-after-todo-state-change-hook 'habitica-task-done-up 'append))
+
+(defun habitica-quit ()
+  "Quit habitica"
+  (interactive)
+  (kill-buffer habitica-buffer-name)
+  (remove-hook  'org-after-todo-state-change-hook 'habitica-task-done-up))
 
 (define-minor-mode habitica-mode
   "Mode to edit and manage your Habitica tasks"
