@@ -364,12 +364,19 @@ TASK is the parsed JSON response."
   (org-set-property "HABITICA_VALUE" (format "%s" (assoc-default 'value task)))
   (org-set-property "HABITICA_TYPE" (format "%s" (assoc-default 'type task)))
   (when (string= "daily" (format "%s" (assoc-default 'type task)))
-    (org-schedule 4 "now"))
+    (let* ((frequency (assoc-default 'frequency task))
+           (everyX (assoc-default 'everyX task))
+           (nextDue (or (aref (assoc-default 'nextDue task) 0)
+                        (current-time-string)))
+           (nextDue (if (string-match-p "Z$" nextDue)
+                        (replace-regexp-in-string "T" " " nextDue)
+                      nextDue))
+           (time (format "<%s +%s%s>" (format-time-string "%Y-%m-%d" (apply #'encode-time (parse-time-string nextDue))) everyX frequency)))
+      (org-schedule 4 time)))
   (if habitica-turn-on-highlighting
       (catch 'aaa
         (habitica--highlight-task task))
-    )
-  )
+    ))
 
 (defun habitica--parse-tasks (tasks order)
   "Parse the tasks to 'org-mode' format.
@@ -394,8 +401,8 @@ TASKS is the list of tasks from the JSON response."
                                                                           (format "%s:%s:%s" type text id))) tasks)))
          (task-id (car (last (split-string task-description ":"))))
          (selected-task (cl-find-if (lambda (task)
-                                     (string= task-id (assoc-default 'id task)))
-                                   tasks)))
+                                      (string= task-id (assoc-default 'id task)))
+                                    tasks)))
     (habitica--insert-task selected-task)))
 
 (defun habitica--parse-completed-tasks (tasks)
@@ -875,9 +882,9 @@ USERNAME is the user's username."
       (insert "* To-Dos :todo:\n")
       (habitica--parse-tasks habitica-data (assoc-default 'todos tasksOrder))
       (when habitica-show-completed-todo
-       (insert "* Completed To-Dos :done:\n")
-       (habitica--parse-completed-tasks (habitica--get-completed-tasks))
-       )
+        (insert "* Completed To-Dos :done:\n")
+        (habitica--parse-completed-tasks (habitica--get-completed-tasks))
+        )
       (insert "* Rewards :rewards:\n")
       (habitica--parse-rewards habitica-data (assoc-default 'rewards tasksOrder))))
   (org-align-all-tags)
