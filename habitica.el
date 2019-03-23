@@ -121,6 +121,7 @@
 (defvar habitica-token nil)
 
 (defvar habitica-tags '())
+(defvar habitica-types '("habit" "daily" "todo" "rewards") "Habitica task types")
 
 (defvar habitica-habit-threshold 1
   "This is the threshold used to consider a habit as done.")
@@ -429,14 +430,16 @@ DOWN is optional, in case of a habit, if you want to be able to downvote the tas
 
 (defun habitica--get-current-type ()
   "Get the current type based on the cursor position."
-  (save-excursion
-    (progn (re-search-backward "^\* " (point-min) t)
-           (car (org-get-tags-at)))))
+  (if (derived-mode-p 'habitica-mode)
+      (save-excursion
+        (progn (re-search-backward "^\* " (point-min) t)
+               (car (org-get-tags-at))))
+    (completing-read "Input the task type: " habitica-types)))
 
 (defun habitica--get-current-task-id ()
   "Get the task id for the task under cursor."
   (save-excursion
-    (progn (search-backward "** " (point-min) t)
+    (progn (org-back-to-heading)
            (org-element-property :HABITICA_ID (org-element-at-point)))))
 
 (defun habitica--get-current-checklist-item-index ()
@@ -645,7 +648,7 @@ NEW-TAG is the new name to give to the tag."
 (defun habitica-todo-task ()
   "Mark the current task as done or todo depending on its current state."
   (interactive)
-  (if (not (equal (buffer-name) habitica-buffer-name))
+  (if (not (derived-mode-p 'habitica-mode))
       (message "You must be inside the habitica buffer")
     (if (equal (format "%s" (org-element-property :todo-type (org-element-at-point))) "todo")
         (progn (habitica-up-task)
@@ -662,7 +665,7 @@ NEW-TAG is the new name to give to the tag."
 
 NAME is the name of the new task to create."
   (interactive "sEnter the task name: ")
-  (if (not (equal (buffer-name) habitica-buffer-name))
+  (if (not (derived-mode-p 'habitica-mode))
       (message "You must be inside the habitica buffer")
     (progn (end-of-line)
            (newline)
