@@ -307,6 +307,12 @@ TASK is the parsed JSON resonse."
   "Transform `number' to priority name."
   (assoc-default number habitica-difficulty))
 
+(defun habitica--set-tags (tags)
+  "Set the tags of the current task to TAGS, replacing current tags."
+  (save-excursion
+    (org-back-to-heading)
+    (org-set-tags tags)))
+
 (defun habitica--insert-tags (task)
   "Insert the tags and difficulty for a particular task.
 
@@ -314,7 +320,7 @@ TASK is the parsed JSON reponse."
   (let* ((tag-ids (assoc-default 'tags task))
          (tags (mapcar #'habitica--tag-explainer tag-ids))
          (priority (habitica--priority-explainer (assoc-default 'priority task))))
-    (org-set-tags-to (append
+    (habitica--set-tags (append
                       tags
                       (list priority)
                       (habitica--get-streak-as-list task)))))
@@ -337,7 +343,7 @@ INCREMENT is what to add to the streak count."
       (if (string-match-p "^[0-9]+$" tag)
           (setq new-tags (push (format "%s" (+ increment (string-to-number tag))) new-tags))
         (setq new-tags (push tag new-tags))))
-    (org-set-tags-to new-tags)))
+    (habitica--set-tags new-tags)))
 
 (defun habitica--highlight-task (task)
   "Highlight the task using its value and user defined thresholds.
@@ -422,7 +428,7 @@ ORDER is the ordered list of ids to print the rewards in."
       (if (equal (assoc-default 'id reward) id)
           (progn  (insert "** ")
                   (insert (concat (assoc-default 'text reward) " \n"))
-                  (org-set-tags-to (format "%d" (assoc-default 'value reward)))
+                  (habitica--set-tags (format "%d" (assoc-default 'value reward)))
                   (org-set-property "HABITICA_ID" (assoc-default '_id reward)))))))
 
 (defun habitica--create-task (type name &optional down)
@@ -474,9 +480,10 @@ DIRECTION is up or down, if the task is a habit."
 
 CLASS is the class you want to tag.
 TAG is what you want to show."
-  (save-excursion (goto-char (point-min))
-                  (if (search-forward (concat "** " class) (point-max) t)
-                      (org-set-tags-to tag))))
+  (with-current-buffer habitica-buffer-name
+    (save-excursion (goto-char (point-min))
+                    (if (search-forward (concat "** " class) (point-max) t)
+                        (habitica--set-tags tag)))))
 
 (defun habitica--show-notifications (current-level old-level current-exp old-exp to-next-level)
   "Compare the new profile to the current one and display notifications.
@@ -756,7 +763,7 @@ NAME is the name of the new tag."
                                     "/tags/"
                                     (format "%s" (car (nth index habitica-tags))))
                             "POST" "")
-    (org-set-tags-to (append (cons (cdr (nth index habitica-tags)) nil) (org-get-tags)))))
+    (habitica--set-tags (append (cons (cdr (nth index habitica-tags)) nil) (org-get-tags)))))
 
 (defun habitica-remove-tag-from-task ()
   "Remove a tag from the task under the cursor."
@@ -767,7 +774,7 @@ NAME is the name of the new tag."
                                     "/tags/"
                                     (car (rassoc (nth index (org-get-tags)) habitica-tags)))
                             "DELETE" "")
-    (org-set-tags-to (delete (nth index (org-get-tags)) (org-get-tags)))))
+    (habitica--set-tags (delete (nth index (org-get-tags)) (org-get-tags)))))
 
 (defun habitica-score-checklist-item ()
   "Score the checklist item under the cursor."
