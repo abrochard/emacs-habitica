@@ -117,8 +117,8 @@
 ;;;; Variables
 (defvar habitica-buffer-name "*habitica*" "Habitica buffer name")
 (defvar habitica-base "https://habitica.com/api/v3")
-(defvar habitica-uid nil)
-(defvar habitica-token nil)
+(defvar habitica-uid (getenv "HABITICA_ID"))
+(defvar habitica-token (getenv "HABITICA_TOKEN"))
 
 (defvar habitica-tags '())
 (defvar habitica-types '("habit" "daily" "todo" "rewards") "Habitica task types")
