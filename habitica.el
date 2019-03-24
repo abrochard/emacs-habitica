@@ -117,7 +117,7 @@
 ;;;; Variables
 (defvar habitica-buffer-name "*habitica*" "Habitica buffer name")
 (defvar habitica-base "https://habitica.com/api/v3")
-(defvar habitica-uid (getenv "HABITICA_ID"))
+(defvar habitica-uid (getenv "HABITICA_UID"))
 (defvar habitica-token (getenv "HABITICA_TOKEN"))
 
 (defvar habitica-tags '())
