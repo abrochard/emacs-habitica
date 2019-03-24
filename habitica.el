@@ -883,6 +883,9 @@ USERNAME is the user's username."
   "Mark habitic task DONE makes the score up"
   (let ((habitica-id (org-element-property :HABITICA_ID (org-element-at-point)))
         new-score)
+    (while (and (null habitica-id)
+                (org-up-heading-safe))
+      (setq habitica-id (org-element-property :HABITICA_ID (org-element-at-point))))
     (when (and habitica-id
                org-state
                (string= org-state "DONE"))
