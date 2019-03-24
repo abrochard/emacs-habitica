@@ -440,12 +440,12 @@ DOWN is optional, in case of a habit, if you want to be able to downvote the tas
 
 (defun habitica--get-current-checklist-item-index ()
   "Get the index of the checklist iterm under cursor."
-  (let ((current-line (org-current-line))
-        (top-line 0))
-    (save-excursion
-      (search-backward ":END:" (point-min) t)
-      (setq top-line (org-current-line)))
-    (- current-line (+ 1 top-line))))
+  (save-excursion
+    (let ((current-line (org-current-line))
+          (top-line (progn
+                      (org-beginning-of-item-list)
+                      (org-current-line))))
+      (- current-line top-line))))
 
 (defun habitica--score-task (id direction)
   "Send a post request to score a task.
