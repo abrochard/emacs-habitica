@@ -394,23 +394,6 @@ ORDER is the ordered list of ids to print the task in."
       (if (equal (assoc-default 'id value) id)
           (habitica--insert-task value)))))
 
-(defun habitica-insert-selected-task (&optional tasks)
-  "select a task from `tasks' and insert it with 'org-mode' format.
-
-TASKS is the list of tasks from the JSON response."
-  (interactive)
-  (let* ((tasks (or tasks (habitica--get-tasks)))
-         (task-description (completing-read "Select a task: " (mapcar (lambda (task)
-                                                                        (let ((type (assoc-default 'type task))
-                                                                              (text (assoc-default 'text task))
-                                                                              (id (assoc-default 'id task)))
-                                                                          (format "%s:%s:%s" type text id))) tasks)))
-         (task-id (car (last (split-string task-description ":"))))
-         (selected-task (cl-find-if (lambda (task)
-                                      (string= task-id (assoc-default 'id task)))
-                                    tasks)))
-    (habitica--insert-task selected-task)))
-
 (defun habitica--parse-completed-tasks (tasks)
   "Parse the completed tasks to 'org-mode' format.
 
@@ -638,12 +621,59 @@ NEW-TAG is the new name to give to the tag."
       (replace-match (concat ":" new-tag ":"))))
   (org-align-all-tags))
 
-(defun habitica-goto-task (id)
+(defun habitica--goto-task (id)
   "Goto habitica task according to `ID'"
-  (goto-char (point-min))
   (goto-char (org-find-property "HABITICA_ID" id)))
 
+(defun habitica-buffer-p (&optional buf)
+  "Judge if `buf' is the habitica buffer"
+  (let ((buf (or buf (buffer-name))))
+    (with-current-buffer buf
+      (string= (buffer-name) habitica-buffer-name))))
+
+(defun habitica-task-done-up ()
+  "Mark habitic task DONE makes the score up"
+  (let ((habitica-id (org-element-property :HABITICA_ID (org-element-at-point)))
+        new-score)
+    (while (and (null habitica-id)
+                (org-up-heading-safe))
+      (setq habitica-id (org-element-property :HABITICA_ID (org-element-at-point))))
+    (when (and habitica-id
+               org-state
+               (string= org-state "DONE"))
+      ;; (habitica--score-task habitica-id "up")
+      (with-current-buffer habitica-buffer-name
+        (save-excursion
+          (habitica--goto-task habitica-id)
+          (habitica-up-task)
+          (habitica--goto-task habitica-id)
+          (setq new-score (org-element-property :HABITICA_VALUE (org-element-at-point)))))
+      ;; update the HABITICA_VALUE in origin org files
+      (save-excursion
+        (org-back-to-heading)
+        (org-set-property "HABITICA_VALUE" new-score))
+      )))
+
+
 ;;;; Interactive
+
+(defun habitica-insert-selected-task (&optional tasks)
+  "select a task from `tasks' and insert it with 'org-mode' format.
+
+TASKS is the list of tasks from the JSON response."
+  (interactive)
+  (let* ((tasks (or tasks (habitica--get-tasks)))
+         (task-description (completing-read "Select a task: " (mapcar (lambda (task)
+                                                                        (let ((type (assoc-default 'type task))
+                                                                              (text (assoc-default 'text task))
+                                                                              (id (assoc-default 'id task)))
+                                                                          (format "%s:%s:%s" type text id))) tasks)))
+         (task-id (car (last (split-string task-description ":"))))
+         (selected-task (cl-find-if (lambda (task)
+                                      (string= task-id (assoc-default 'id task)))
+                                    tasks)))
+    (habitica--insert-task selected-task)))
+
 (defun habitica-up-task ()
   "Up or complete a task."
   (interactive)
@@ -872,35 +902,6 @@ USERNAME is the user's username."
   (if (and habitica-uid habitica-token)
       (message "Successfully logged in.")
     (message "Error logging in.")))
-
-(defun habitica-buffer-p (&optional buf)
-  "Judge if `buf' is the habitica buffer"
-  (let ((buf (or buf (buffer-name))))
-    (with-current-buffer buf
-      (string= (buffer-name) habitica-buffer-name))))
-
-(defun habitica-task-done-up ()
-  "Mark habitic task DONE makes the score up"
-  (let ((habitica-id (org-element-property :HABITICA_ID (org-element-at-point)))
-        new-score)
-    (while (and (null habitica-id)
-                (org-up-heading-safe))
-      (setq habitica-id (org-element-property :HABITICA_ID (org-element-at-point))))
-    (when (and habitica-id
-               org-state
-               (string= org-state "DONE"))
-      ;; (habitica--score-task habitica-id "up")
-      (with-current-buffer habitica-buffer-name
-        (save-excursion
-          (habitica-goto-task habitica-id)
-          (habitica-up-task)
-          (habitica-goto-task habitica-id)
-          (setq new-score (org-element-property :HABITICA_VALUE (org-element-at-point)))))
-      ;; update the HABITICA_VALUE in origin org files
-      (save-excursion
-        (org-back-to-heading)
-        (org-set-property "HABITICA_VALUE" new-score))
-      )))
 
 
 ;;;###autoload
