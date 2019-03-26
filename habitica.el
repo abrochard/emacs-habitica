@@ -149,6 +149,8 @@
 
 (defvar habitica-tags-buffer-name "*habitica tags*")
 
+(defvar habitica-triggered-state-change-p nil "Variable used to specify whether task state changed by habitica trigger")
+
 (defvar habitica-command-map
   (let ((map (make-sparse-keymap)))
     (define-key map "n"         #'habitica-new-task)
@@ -633,27 +635,29 @@ NEW-TAG is the new name to give to the tag."
 
 (defun habitica-task-done-up ()
   "Mark habitic task DONE makes the score up"
-  (ignore-errors
-    (let ((habitica-id (org-element-property :HABITICA_ID (org-element-at-point)))
-          new-score)
-      (while (and (null habitica-id)
-                  (org-up-heading-safe))
-        (setq habitica-id (org-element-property :HABITICA_ID (org-element-at-point))))
-      (when (and habitica-id
-                 org-state
-                 (string= org-state "DONE"))
-        ;; (habitica--score-task habitica-id "up")
-        (with-current-buffer habitica-buffer-name
+  (unless habitica-triggered-state-change-p
+    (ignore-errors
+      (let ((habitica-id (org-element-property :HABITICA_ID (org-element-at-point)))
+            (habitica-triggered-state-change-p t)
+            new-score)
+        (while (and (null habitica-id)
+                    (org-up-heading-safe))
+          (setq habitica-id (org-element-property :HABITICA_ID (org-element-at-point))))
+        (when (and habitica-id
+                   org-state
+                   (string= org-state "DONE"))
+          ;; (habitica--score-task habitica-id "up")
+          (with-current-buffer habitica-buffer-name
+            (save-excursion
+              (habitica--goto-task habitica-id)
+              (habitica-up-task)
+              (habitica--goto-task habitica-id)
+              (setq new-score (org-element-property :HABITICA_VALUE (org-element-at-point)))))
+          ;; update the HABITICA_VALUE in origin org files
           (save-excursion
-            (habitica--goto-task habitica-id)
-            (habitica-up-task)
-            (habitica--goto-task habitica-id)
-            (setq new-score (org-element-property :HABITICA_VALUE (org-element-at-point)))))
-        ;; update the HABITICA_VALUE in origin org files
-        (save-excursion
-          (org-back-to-heading)
-          (org-set-property "HABITICA_VALUE" new-score))
-        ))))
+            (org-back-to-heading)
+            (org-set-property "HABITICA_VALUE" new-score))
+          )))))
 
 
 ;;;; Interactive
