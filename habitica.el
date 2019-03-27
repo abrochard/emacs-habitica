@@ -243,10 +243,6 @@ DATA is the form to be sent as x-www-form-urlencoded."
                                                    (buffer-string)
                                                    'utf-8))))))
 
-(defun habitica--cron ()
-  "Runs cron"
-  (habitica--send-request "/cron" "POST" ""))
-
 (defun habitica--get-tasks ()
   "Gets all the user's tasks."
   (habitica--send-request "/tasks/user" "GET" ""))
@@ -665,6 +661,11 @@ NEW-TAG is the new name to give to the tag."
 
 
 ;;;; Interactive
+
+(defun habitica-cron ()
+  "Runs cron"
+  (interactive)
+  (habitica--send-request "/cron" "POST" ""))
 
 (defun habitica-insert-selected-task (&optional tasks)
   "select a task from `tasks' and insert it with 'org-mode' format.
