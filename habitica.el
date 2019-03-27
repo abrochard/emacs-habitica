@@ -243,6 +243,10 @@ DATA is the form to be sent as x-www-form-urlencoded."
                                                    (buffer-string)
                                                    'utf-8))))))
 
+(defun habitica--cron ()
+  "Runs cron"
+  (habitica--send-request "/cron" "POST" ""))
+
 (defun habitica--get-tasks ()
   "Gets all the user's tasks."
   (habitica--send-request "/tasks/user" "GET" ""))
@@ -884,14 +888,14 @@ TEXT is the checklist item new name."
   (org-update-checkbox-count))
 
 
-(defun habitica-login (username)
+(defun habitica-login (username &optional password)
   "Login and retrives the user id and api token.
 
-USERNAME is the user's username."
+USERNAME is the user's username, PASSWORD is the user's password."
   (interactive "sEnter your Habitica username: ")
   (setq habitica-uid nil)
   (setq habitica-token nil)
-  (let ((password (read-passwd "Enter your password: ")))
+  (let ((password (or password (read-passwd "Enter your password: "))))
     (let ((url "https://habitica.com/api/v3/user/auth/local/login")
           (url-request-method "POST")
           (url-request-extra-headers `(("Content-Type" . "application/x-www-form-urlencoded")))
