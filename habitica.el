@@ -401,11 +401,15 @@ TASK is the parsed JSON response."
   (let ((type (habitica--task-type task))
         (value (habitica--task-value task))
         (completed (habitica--task-completed task)))
-    (if (equal (format "%s" type) "habit")
-        (cond ((>= value habitica-habit-threshold) (insert "** DONE "))
-              ((< value habitica-habit-threshold) (insert "** TODO ")))
-      (cond         ((eq completed :json-false) (insert "** TODO "))
-                    ((eq completed t) (insert "** DONE "))))))
+    (cond ((equal (format "%s" type) "habit")
+           (if (>= value habitica-habit-threshold)
+               (insert "** DONE ")
+             (insert "** TODO ")))
+          ((equal (format "%s" type) "daily")
+           (insert "** TODO "))
+          (t
+           (cond ((eq completed :json-false) (insert "** TODO "))
+                 ((eq completed t) (insert "** DONE ")))))))
 
 (defun habitica--insert-deadline (task)
   "Insert the deadline for a particular task.
