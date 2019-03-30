@@ -425,7 +425,7 @@ TASK is the parsed JSON response."
 TASK is the parsed JSON resonse."
   (insert " [/]\n")
   ;; (insert (format "%s" (habitica--task-checklist task)))
-  (dolist (check (append (habitica--task-checklist) nil))
+  (dolist (check (append (habitica--task-checklist task) nil))
     (insert (concat "   - ["
                     (if (eq (habitica--checklist-item-completed check) t)
                         "X"
