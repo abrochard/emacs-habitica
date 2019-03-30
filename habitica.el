@@ -340,47 +340,94 @@ Options are 0.1, 1, 1.5, 2; eqivalent of Trivial, Easy, Medium, Hard."
   (habitica--send-request (concat "/tasks/" task-id "/checklist/" item-id) "DELETE" ""))
 
 ;;;; Utilities
+(defun habitica--task-checklist (task)
+  "Get checklist items from `TASK'"
+  (assoc-default 'checklist task))
+
+(defun habitica--task-value (task)
+  "Get value from `TASK'"
+  (assoc-default 'value task))
+
+(defun habitica--task-type (task)
+  "Get type from `TASK'"
+  (assoc-default 'type task))
+
+(defun habitica--task-completed (task)
+  "Get completed state from `TASK'"
+  (assoc-default 'completed task))
+
+(defun habitica--task-date (task)
+  "Get due date from `TASK'"
+  (assoc-default 'date task))
+
+(defun habitica--task-text (task)
+  "Get text from `TASK'"
+  (assoc-default 'text task))
+
+(defun habitica--task-streak (task)
+  "Get streak from `task'"
+  (assoc-default 'streak task))
+
+(defun habitica--task-tags (task)
+  "Get tags from `task'"
+  (assoc-default 'tags task))
+
+(defun habitica--task-priority (task)
+  "Get priority from `task'"
+  (assoc-default 'priority task))
+
+(defun habitica--checklist-item-text (item)
+  "Get text from checklist item"
+  (assoc-default 'text item))
+
+(defun habitica--checklist-item-completed (item)
+  "Get completed state from checklist item"
+  (assoc-default 'completed item))
+
 (defun habitica--get-checklist-item-id (task-id index)
   "Get the checklist item id of a task based on the task id and the item index.
 
 TASK-ID is the task id.
 INDEX is the checklist item index."
-  (assoc-default 'id
-                 (nth index
-                      (append (assoc-default 'checklist
-                                             (habitica-api-get-task task-id))
-                              nil))))
+  (let ((task (habitica-api-get-task task-id)))
+    (assoc-default 'id
+                   (nth index
+                        (append (habitica--task-checklist task) nil)))))
 
 (defun habitica--insert-todo (task)
   "Logic to insert TODO or DONE for a task.
 
 TASK is the parsed JSON response."
-  (if (equal (format "%s" (assoc-default 'type task)) "habit")
-      (cond ((>= (assoc-default 'value task) habitica-habit-threshold) (insert "** DONE "))
-            ((< (assoc-default 'value task) habitica-habit-threshold) (insert "** TODO ")))
-    (cond         ((eq (assoc-default 'completed task) :json-false) (insert "** TODO "))
-                  ((eq (assoc-default 'completed task) t) (insert "** DONE ")))))
+  (let ((type (habitica--task-type task))
+        (value (habitica--task-value task))
+        (completed (habitica--task-completed task)))
+    (if (equal (format "%s" type) "habit")
+        (cond ((>= value habitica-habit-threshold) (insert "** DONE "))
+              ((< value habitica-habit-threshold) (insert "** TODO ")))
+      (cond         ((eq completed :json-false) (insert "** TODO "))
+                    ((eq completed t) (insert "** DONE "))))))
 
 (defun habitica--insert-deadline (task)
   "Insert the deadline for a particular task.
 
 TASK is the parsed JSON response."
-  (when (and (assoc-default 'date task) (< 1 (length (assoc-default 'date task))))
-    (org-deadline 4 (assoc-default 'date task))))
+  (let ((due-date (habitica--task-date task)))
+    (when (and due-date (< 1 (length due-date)))
+      (org-deadline 4 due-date))))
 
 (defun habitica--insert-checklist (task)
   "Insert the checklist content of the task as an org check list.
 
 TASK is the parsed JSON resonse."
   (insert " [/]\n")
-  ;; (insert (format "%s" (assoc-default 'checklist task)))
-  (dolist (check (append (assoc-default 'checklist task) nil))
+  ;; (insert (format "%s" (habitica--task-checklist task)))
+  (dolist (check (append (habitica--task-checklist) nil))
     (insert (concat "   - ["
-                    (if (eq (assoc-default 'completed check) t)
+                    (if (eq (habitica--checklist-item-completed check) t)
                         "X"
                       " ")
                     "] "
-                    (assoc-default 'text check)
+                    (habitica--checklist-item-text check)
                     " \n")))
   (org-update-checkbox-count))
 
@@ -402,9 +449,9 @@ TASK is the parsed JSON resonse."
   "Insert the tags and difficulty for a particular task.
 
 TASK is the parsed JSON reponse."
-  (let* ((tag-ids (assoc-default 'tags task))
+  (let* ((tag-ids (habitica--task-tags task))
          (tags (mapcar #'habitica--tag-explainer tag-ids))
-         (priority (habitica--priority-explainer (assoc-default 'priority task))))
+         (priority (habitica--priority-explainer (habitica--task-priority task))))
     (habitica--set-tags (append
                       tags
                       (list priority)
@@ -414,9 +461,10 @@ TASK is the parsed JSON reponse."
   "Get the streak formated as a single element list.
 
 TASK is the parsed JSON reponse."
-  (if (and habitica-show-streak (assoc-default 'streak task) (< 0 (assoc-default 'streak task)))
-      (list (format "%s" (assoc-default 'streak task)))
-    '()))
+  (let ((streak (habitica--task-streak task)))
+    (if (and habitica-show-streak streak (< 0 streak))
+        (list (format "%s" streak))
+      '())))
 
 (defun habitica--update-streak (increment)
   "Update the streak count for a task.
@@ -435,26 +483,26 @@ INCREMENT is what to add to the streak count."
 
 TASK is the parsed JSON reponse."
   (dolist (value habitica-color-threshold)
-    (if (<= (assoc-default 'value task) (cdr value))
-        (progn (highlight-regexp (assoc-default 'text task) (car value))
+    (if (<= (habitica--task-value task) (cdr value))
+        (progn (highlight-regexp (habitica--task-text task) (car value))
                (throw 'aaa nil))))
-  (highlight-regexp (assoc-default 'text task) (car (car (last habitica-color-threshold)))))
+  (highlight-regexp (habitica--task-text task) (car (car (last habitica-color-threshold)))))
 
 (defun habitica--insert-task (task)
   "Format the task into org mode todo heading.
 
 TASK is the parsed JSON response."
   (habitica--insert-todo task)
-  (insert (assoc-default 'text task))
-  (if (< 0 (length (assoc-default 'checklist task)))
+  (insert (habitica--task-text task))
+  (if (< 0 (length (habitica--task-checklist task)))
       (habitica--insert-checklist task))
   (insert "\n")
   (habitica--insert-deadline task)
   (habitica--insert-tags task)
   (org-set-property "HABITICA_ID" (assoc-default '_id task))
-  (org-set-property "HABITICA_VALUE" (format "%s" (assoc-default 'value task)))
-  (org-set-property "HABITICA_TYPE" (format "%s" (assoc-default 'type task)))
-  (when (string= "daily" (format "%s" (assoc-default 'type task)))
+  (org-set-property "HABITICA_VALUE" (format "%s" (habitica--task-value task)))
+  (org-set-property "HABITICA_TYPE" (format "%s" (habitica--task-type task)))
+  (when (string= "daily" (format "%s" (habitica--task-type task)))
     (let* ((frequency (assoc-default 'frequency task))
            (everyX (assoc-default 'everyX task))
            (nextDue (or (aref (assoc-default 'nextDue task) 0)
@@ -736,8 +784,8 @@ TASKS is the list of tasks from the JSON response."
   (interactive)
   (let* ((tasks (or tasks (habitica-api-get-tasks)))
          (task-description (completing-read "Select a task: " (mapcar (lambda (task)
-                                                                        (let ((type (assoc-default 'type task))
-                                                                              (text (assoc-default 'text task))
+                                                                        (let ((type (habitica--task-type task))
+                                                                              (text (habitica--task-text task))
                                                                               (id (assoc-default 'id task)))
                                                                           (format "%s:%s:%s" type text id))) tasks)))
          (task-id (car (last (split-string task-description ":"))))
