@@ -848,8 +848,7 @@ NAME is the name of the new task to create."
   (interactive "sEnter the task name: ")
   (if (not (habitica-buffer-p))
       (message "You must be inside the habitica buffer")
-    (progn (end-of-line)
-           (newline)
+    (progn (org-forward-heading-same-level 1)
            (habitica--insert-task (habitica-api-create-task (habitica--get-current-type) name))
            (org-content))))
 
