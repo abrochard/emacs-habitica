@@ -881,16 +881,6 @@ NAME is the name of the new task to create."
            (habitica--insert-task (habitica-api-create-task (habitica--get-current-type) name))
            (org-content))))
 
-(defun habitica-add-this-task ()
-  "Add a new task based on current headline "
-  (interactive)
-  (let ((headlines (nth 4 (org-heading-components))))
-    (while (org-up-heading-safe)
-      (setq headlines (concat (nth 4 (org-heading-components)) "-" headlines)))
-    (message "Add new habitica-task:%s" headlines)
-    (with-current-buffer habitica-buffer-name
-      (habitica-new-task headlines))))
-
 (defun habitica-new-task-using-current-headline (&optional type)
   "Attempt to be smart to create a new task based on current headline in a common org-file.
 
