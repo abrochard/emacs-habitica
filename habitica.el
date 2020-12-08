@@ -339,6 +339,10 @@ Options are 0.1, 1, 1.5, 2; eqivalent of Trivial, Easy, Medium, Hard."
   "Delete a checklist item from a task."
   (habitica--send-request (concat "/tasks/" task-id "/checklist/" item-id) "DELETE" ""))
 
+(defun habitica-api-feed-pet (pet food)
+  "Feed PET using FOOD."
+  (habitica--send-request (format "/user/feed/%s/%s" pet food) "POST" ""))
+
 ;;;; Utilities
 (defun habitica--task-checklist (task)
   "Get checklist items from `TASK'"
@@ -781,6 +785,31 @@ NEW-TAG is the new name to give to the tag."
   (interactive)
   (habitica-api-cron))
 
+(defun habitica-feed-pet-to-full (&optional pet food)
+  "Feed PET using FOOD until It is full."
+  (interactive)
+  (unless pet
+    (let* ((content (habitica--send-request "/content?language=en" "GET" nil))
+           (all-pets (assoc-default 'petInfo content))
+           (pet-names (mapcar #'car all-pets))
+           (pet-name (completing-read "Select the Pet: " pet-names))
+           (pet-info (cdr (assoc-string pet-name all-pets)))
+           (potion (assoc-default 'potion pet-info))
+           (all-foods (assoc-default 'food b))
+           (potion-foods (cl-remove-if-not (lambda (food-info)
+                                             (let* ((food-attrs (cdr food-info))
+                                                    (target (assoc-default 'target food-attrs)))
+                                               (string= target potion)))
+                                           all-foods))
+           (potion-food-names (mapcar #'car potion-foods))
+           (food-name (completing-read "Select the Food: " potion-food-names)))
+      (setq pet pet-name)
+      (setq food food-name))
+      (message "feed %s with %s" pet food)
+      (let ((feed 0))
+        (while (>= feed 0)
+          (setq feed (habitica-api-feed-pet pet food))))))
+
 (defun habitica-insert-selected-task (&optional tasks)
   "select a task from `tasks' and insert it with 'org-mode' format.
 
@@ -846,6 +875,16 @@ NAME is the name of the new task to create."
            (newline)
            (habitica--insert-task (habitica-api-create-task (habitica--get-current-type) name))
            (org-content))))
+
+(defun habitica-add-this-task ()
+  "Add a new task based on current headline "
+  (interactive)
+  (let ((headlines (nth 4 (org-heading-components))))
+    (while (org-up-heading-safe)
+      (setq headlines (concat (nth 4 (org-heading-components)) "-" headlines)))
+    (message "Add new habitica-task:%s" headlines)
+    (with-current-buffer habitica-buffer-name
+      (habitica-new-task headlines))))
 
 (defun habitica-set-deadline ()
   "Set a deadline for a todo task."
