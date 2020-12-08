@@ -496,6 +496,14 @@ TASK is the parsed JSON reponse."
                (throw 'aaa nil))))
   (highlight-regexp (habitica--task-text task) (car (car (last habitica-color-threshold)))))
 
+(defun habitica--update-properties (task)
+  "Update the task properties of org mode todo heading.
+
+TASK is the parsed JSON response."
+  (org-set-property "HABITICA_ID" (assoc-default '_id task))
+  (org-set-property "HABITICA_VALUE" (format "%s" (habitica--task-value task)))
+  (org-set-property "HABITICA_TYPE" (format "%s" (habitica--task-type task))))
+
 (defun habitica--insert-task (task)
   "Format the task into org mode todo heading.
 
@@ -507,9 +515,7 @@ TASK is the parsed JSON response."
   (insert "\n")
   (habitica--insert-deadline task)
   (habitica--insert-tags task)
-  (org-set-property "HABITICA_ID" (assoc-default '_id task))
-  (org-set-property "HABITICA_VALUE" (format "%s" (habitica--task-value task)))
-  (org-set-property "HABITICA_TYPE" (format "%s" (habitica--task-type task)))
+  (habitica--update-properties task)
   (when (string= "daily" (format "%s" (habitica--task-type task)))
     (let* ((frequency (assoc-default 'frequency task))
            (everyX (assoc-default 'everyX task))
@@ -871,8 +877,7 @@ NAME is the name of the new task to create."
   (interactive "sEnter the task name: ")
   (if (not (habitica-buffer-p))
       (message "You must be inside the habitica buffer")
-    (progn (end-of-line)
-           (newline)
+    (progn (org-forward-heading-same-level 1)
            (habitica--insert-task (habitica-api-create-task (habitica--get-current-type) name))
            (org-content))))
 
@@ -885,6 +890,20 @@ NAME is the name of the new task to create."
     (message "Add new habitica-task:%s" headlines)
     (with-current-buffer habitica-buffer-name
       (habitica-new-task headlines))))
+
+(defun habitica-new-task-using-current-headline (&optional type)
+  "Attempt to be smart to create a new task based on current headline in a common org-file.
+
+TYPE specify the new task's type ."
+  (interactive)
+  (let ((type (or type
+                  (completing-read "Input the task type: " habitica-types)))
+        (headlines (nth 4 (org-heading-components))))
+    (save-mark-and-excursion
+      (while (org-up-heading-safe)
+        (setq headlines (concat (nth 4 (org-heading-components)) "-" headlines))))
+    (message "habitica-task-name:%s" headlines)
+    (habitica--update-properties (habitica-api-create-task type headlines))))
 
 (defun habitica-set-deadline ()
   "Set a deadline for a todo task."
