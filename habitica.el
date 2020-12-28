@@ -257,15 +257,17 @@ DATA is the form to be sent as x-www-form-urlencoded."
 ID is the task id."
   (habitica--send-request (concat "/tasks/" id) "GET" ""))
 
-(defun habitica-api-create-task (type name &optional down)
+(defun habitica-api-create-task (type name notes &optional down)
   "Send a post request to create a new user task.
 
 TYPE is the type of task that you want to create (habit, daily, or todo)
 NAME is the task name
+NOTES is the corresponding note text of the task that you want to create.
 DOWN is optional, in case of a habit, if you want to be able to downvote the task."
-  (if down
-      (habitica--send-request "/tasks/user" "POST" (concat "type=" type "&text=" (url-encode-url name) "&down=" down))
-    (habitica--send-request "/tasks/user" "POST" (concat "type=" type "&text=" (url-encode-url name)))))
+  (if down (habitica--send-request "/tasks/user" "POST" (concat "type=" type "&text=" (url-encode-url name) "&notes=" (url-encode-url notes) "&down=" down))
+    (habitica--send-request "/tasks/user" "POST" (concat "type=" type "&text=" (url-encode-url name) "&notes=" (url-encode-url notes)))
+    ))
+
 
 (defun habitica-api-score-task (id direction)
   "Send a post request to score a task.
@@ -367,6 +369,10 @@ Options are 0.1, 1, 1.5, 2; eqivalent of Trivial, Easy, Medium, Hard."
 (defun habitica--task-text (task)
   "Get text from `TASK'"
   (assoc-default 'text task))
+
+(defun habitica--task-notes (task)
+  "Get notes from `TASK'"
+  (assoc-default 'notes task))
 
 (defun habitica--task-streak (task)
   "Get streak from `task'"
@@ -512,6 +518,8 @@ TASK is the parsed JSON response."
   (insert (habitica--task-text task))
   (if (< 0 (length (habitica--task-checklist task)))
       (habitica--insert-checklist task))
+  (insert "\n")
+  (insert (habitica--task-notes task))
   (insert "\n")
   (habitica--insert-deadline task)
   (habitica--insert-tags task)
@@ -870,16 +878,33 @@ TASKS is the list of tasks from the JSON response."
                  (habitica--update-streak -1))
              (org-todo "TODO")))))
 
-(defun habitica-new-task (name)
+(defun habitica-new-task (name notes)
   "Attempt to be smart to create a new task based on context.
 
 NAME is the name of the new task to create."
-  (interactive "sEnter the task name: ")
+  (interactive "sEnter the task name: \nsEnter notes: ")
   (if (not (habitica-buffer-p))
       (message "You must be inside the habitica buffer")
     (progn (org-forward-heading-same-level 1)
-           (habitica--insert-task (habitica-api-create-task (habitica--get-current-type) name))
+           (habitica--insert-task (habitica-api-create-task (habitica--get-current-type) name notes))
            (org-content))))
+
+;; Source: https://emacs.stackexchange.com/questions/26442/org-mode-a-function-to-org-copy-and-org-archive-unique-tasks-to-different-files
+(defun habitica-org-get-entry-no-subtrees (&optional no-properties)
+  "Get the entry text, after heading, no subtrees.
+   If no-properties is non-nil, ignore the text properties of the entry"
+  (interactive)
+  (save-excursion
+    (let (beg end)
+      (org-back-to-heading t) ; set point to heading beginning
+      (setq beg (point-at-bol 2))
+      (skip-chars-forward " \t\r\n")
+      (save-match-data (outline-next-heading)) ; move point to next heading line
+      (setq end (point))
+      (goto-char beg)
+      (if no-properties
+          (buffer-substring-no-properties beg end)
+        (buffer-substring beg end)))))
 
 (defun habitica-new-task-using-current-headline (&optional type)
   "Attempt to be smart to create a new task based on current headline in a common org-file.
@@ -891,9 +916,12 @@ TYPE specify the new task's type ."
         (headlines (nth 4 (org-heading-components))))
     (save-mark-and-excursion
       (while (org-up-heading-safe)
-        (setq headlines (concat (nth 4 (org-heading-components)) "-" headlines))))
+        (setq headlines (concat (nth 4 (org-heading-components)) "-" headlines)))
+      (setq entry (habitica-org-get-entry-no-subtrees t))
+      )
     (message "habitica-task-name:%s" headlines)
-    (habitica--update-properties (habitica-api-create-task type headlines))))
+    (message "habitica-task-notes:%s" entry)
+    (habitica--update-properties (habitica-api-create-task type headlines entry))))
 
 (defun habitica-set-deadline ()
   "Set a deadline for a todo task."
