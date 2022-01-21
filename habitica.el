@@ -186,6 +186,12 @@
   :type 'boolean
   )
 
+(defcustom habitica-export-backend 'ascii
+  "Export backend that used by `habitica-publish2group'"
+  :group 'habitica
+  :type 'symbol
+  )
+
 ;;; Global Habitica menu
 (defvar habitica-mode-menu-map
   (easy-menu-create-menu
@@ -342,6 +348,28 @@ Options are 0.1, 1, 1.5, 2; eqivalent of Trivial, Easy, Medium, Hard."
 (defun habitica-api-feed-pet (pet food)
   "Feed PET using FOOD."
   (habitica--send-request (format "/user/feed/%s/%s" pet food) "POST" ""))
+
+(defun habitica-api-get-groups (&rest types)
+  "Get groups which type is in TYPES."
+  (let* ((types (or types '("party" "guilds" "privateGuilds" "publicGuilds" "tavern")))
+         (types (string-join types ",")))
+    (habitica--send-request (format "/groups?type=%s" (url-encode-url types)) "GET" "")))
+
+(defun habitica-api-get-group-id (&optional name)
+  "Get the id of group which name is NAME"
+  (let* ((groups (habitica-api-get-groups))
+         (get-group-name-fn (lambda (group)
+                              (cdr (assoc-string "name" group))))
+         (name (or name (completing-read "Select the group: "  (mapcar get-group-name-fn groups))))
+         (the-group-p-fn (lambda (group)
+                           (string= name (funcall get-group-name-fn group))))
+         (the-group (cl-find-if the-group-p-fn groups)))
+    (cdr (assoc-string "_id" the-group))))
+
+(defun habitica-api-chat2group (message group-id)
+  "Post chat MESSAGE to a group."
+  (habitica--send-request (format "/groups/%s/chat" group-id) "POST" (concat "message=" (url-encode-url message))))
+
 
 ;;;; Utilities
 (defun habitica--task-checklist (task)
@@ -815,6 +843,12 @@ NEW-TAG is the new name to give to the tag."
       (let ((feed 0))
         (while (>= feed 0)
           (setq feed (habitica-api-feed-pet pet food))))))
+
+(defun habitica-publish2group (&optional group-name)
+  (interactive)
+  (let ((body (org-export-as habitica-export-backend nil t t))
+        (group-id (habitica-api-get-group-id group-name)))
+    (habitica-api-chat2group body group-id)))
 
 (defun habitica-insert-selected-task (&optional tasks)
   "select a task from `tasks' and insert it with 'org-mode' format.
