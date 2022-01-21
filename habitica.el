@@ -365,14 +365,12 @@ Options are 0.1, 1, 1.5, 2; eqivalent of Trivial, Easy, Medium, Hard."
          (the-group-p-fn (lambda (group)
                            (string= name (funcall get-group-name-fn group))))
          (the-group (cl-find-if the-group-p-fn groups)))
-    (setq xxx the-group)
     (cdr (assoc-string "_id" the-group))))
 
 (defun habitica-api-chat2group (message group-id)
   "Post chat MESSAGE to a group."
   (habitica--send-request (format "/groups/%s/chat" group-id) "POST" (concat "message=" (url-encode-url message))))
 
-;; (habitica-api-chat2group "published from Emacs" "4e1b6290-3026-4b52-9c55-8c58f4b5c54d")
 
 ;;;; Utilities
 (defun habitica--task-checklist (task)
