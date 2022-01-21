@@ -353,7 +353,6 @@ Options are 0.1, 1, 1.5, 2; eqivalent of Trivial, Easy, Medium, Hard."
   "Get groups which type is in TYPES."
   (let* ((types (or types '("party" "guilds" "privateGuilds" "publicGuilds" "tavern")))
          (types (string-join types ",")))
-    (message "types=%s" types)
     (habitica--send-request (format "/groups?type=%s" (url-encode-url types)) "GET" "")))
 
 (defun habitica-api-get-group-id (&optional name)
