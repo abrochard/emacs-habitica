@@ -257,6 +257,17 @@ DATA is the form to be sent as x-www-form-urlencoded."
   "Gets all the completed user's tasks."
   (habitica--send-request "/tasks/user?type=completedTodos" "GET" ""))
 
+(defun habitica-api-get-task-id-by-name (&optional name)
+  "Get a task id by NAME."
+  (let* ((tasks (habitica-api-get-tasks))
+         (get-task-name-fn (lambda (task)
+                             (cdr (assoc-string "text" task))))
+         (name (or name (completing-read "Please select a task: " (mapcar get-task-name-fn tasks))))
+         (the-task-p-fn (lambda (task)
+                          (string= name (funcall get-task-name-fn task))))
+         (the-task (cl-find-if the-task-p-fn tasks)))
+    (cdr (assoc-string "id" the-task))))
+
 (defun habitica-api-get-task (id)
   "Get a task from task id.
 
