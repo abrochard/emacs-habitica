@@ -274,6 +274,11 @@ DATA is the form to be sent as x-www-form-urlencoded."
 ID is the task id."
   (habitica--send-request (concat "/tasks/" id) "GET" ""))
 
+(defun habitica-api-get-task-by-name (&optional name)
+  "Get a task from task NAME."
+  (let ((id (habitica-api-get-task-id-by-name name)))
+    (habitica-api-get-task id)))
+
 (defun habitica-api-create-task (type name &optional down)
   "Send a post request to create a new user task.
 
@@ -290,6 +295,14 @@ DOWN is optional, in case of a habit, if you want to be able to downvote the tas
 ID is the id of the task that you are scoring
 DIRECTION is up or down, if the task is a habit."
   (habitica--send-request (concat "/tasks/" id "/score/" direction) "POST" ""))
+
+(defun habitica-api-score-task-by-name (name direction)
+  "Send a post request to score a task.
+
+NAME is the name of the task that you are scoring
+DIRECTION is up or down, if the task is a habit."
+  (let ((id (habitica-api-get-task-id-by-name name)))
+    (habitica-api-score-task id direction)))
 
 (defun habitica-api-get-profile ()
   "Get the user's raw profile data."
