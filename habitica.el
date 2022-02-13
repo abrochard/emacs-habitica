@@ -416,6 +416,12 @@ Options are 0.1, 1, 1.5, 2; eqivalent of Trivial, Easy, Medium, Hard."
                              "")))
     (habitica--send-request (format "/user/class/cast/%s%s" spell query-paramaters) "POST" "")))
 
+(defun habitica-api-buy-health-potion ()
+  "Buy health potion."
+  (when (and  (< habitica-hp habitica-max-hp)
+            (> habitica-gold 15))
+    (habitica--send-request "/user/buy-health-potion" "POST" "")))
+
 ;;;; Utilities
 (defun habitica--task-checklist (task)
   "Get checklist items from `TASK'"
@@ -698,13 +704,16 @@ TO-NEXT-LEVEL is the experience required to reach the next level."
   "Set the profile variables.
 
 PROFILE is the JSON formatted response."
-  (setq habitica-level (assoc-default 'lvl profile)) ;get level
-  (setq habitica-exp (round (assoc-default 'exp profile))) ;get exp
-  (setq habitica-max-exp (assoc-default 'toNextLevel profile)) ;get max experience
-  (setq habitica-hp (round (assoc-default 'hp profile))) ;get hp
-  (setq habitica-max-hp (assoc-default 'maxHealth profile)) ;get max hp
-  (setq habitica-mp (round (assoc-default 'mp profile))) ;get mp
-  (setq habitica-max-mp (assoc-default 'maxMP profile)) ;get max mp
+  (setq habitica-level (assoc-default 'lvl profile))           ;get level
+  (setq habitica-exp (round (assoc-default 'exp profile)))     ;get exp
+  (when (assoc-default 'toNextLevel profile)
+    (setq habitica-max-exp (assoc-default 'toNextLevel profile))) ;get max experience
+  (setq habitica-hp (round (assoc-default 'hp profile)))       ;get hp
+  (when (assoc-default 'maxHealth profile)
+    (setq habitica-max-hp (assoc-default 'maxHealth profile)))    ;get max hp
+  (setq habitica-mp (round (assoc-default 'mp profile)))       ;get mp
+  (when (assoc-default 'maxMP profile)
+    (setq habitica-max-mp (assoc-default 'maxMP profile)))        ;get max mp
   (setq habitica-gold (string-to-number (format "%d" (assoc-default 'gp profile)))) ;get gold
   (setq habitica-silver (string-to-number (format "%d" (* 100 (- (assoc-default 'gp profile) habitica-gold))))) ;get silver
   (setq habitica-class (assoc-default 'class stats))
@@ -754,13 +763,14 @@ SHOW-NOTIFICATION, if true, it will add notification tags."
     (if show-notification
         (habitica--show-notifications current-level old-level current-exp old-exp to-next-level))))
 
-(defun habitica--refresh-profile ()
+(defun habitica--refresh-profile (&optional stats)
   "Kill the current profile and parse a new one."
   (with-current-buffer habitica-buffer-name
     (save-excursion
       (progn (re-search-backward "^\* Stats" (point-min) t)
              (org-cut-subtree)
-             (habitica--parse-profile (assoc-default 'stats (habitica-api-get-profile)) t)))))
+             (habitica--parse-profile (or stats
+                                          (assoc-default 'stats (habitica-api-get-profile))) t)))))
 
 (defun habitica--get-tags ()
   "Get the dictionary id/tags."
@@ -865,6 +875,13 @@ NEW-TAG is the new name to give to the tag."
   (interactive)
   (when (habitica-api-need-cron-p)
     (habitica-api-cron)))
+
+(defun habitica-buy-health-potion ()
+  "Buy health potion."
+  (interactive)
+  (let ((stats (habitica-api-buy-health-potion)))
+    (when stats
+      (habitica--refresh-profile stats))))
 
 (defun habitica-feed-pet-to-full (&optional pet food)
   "Feed PET using FOOD until It is full."
