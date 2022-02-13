@@ -430,6 +430,13 @@ Options are 0.1, 1, 1.5, 2; eqivalent of Trivial, Easy, Medium, Hard."
          (RSVPNeeded (assoc-default 'RSVPNeeded quest-data)))
     (when (equal RSVPNeeded t)
         (habitica--send-request (format "/groups/party/quests/accept") "POST" ""))))
+(defun habitica-api-allocate-a-stat-point (&optional stat)
+  "Allocate a stat point."
+  (let* ((valid-stats '("str" "con" "int" "per"))
+         (stat (or stat
+                   (completing-read "Select a stat: " valid-stats))))
+    (when (member stat valid-stats)
+      (habitica--send-request (format "/user/allocate?stat=%s" stat) "POST" ""))))
 
 ;;;; Utilities
 (defun habitica--task-checklist (task)
@@ -897,6 +904,24 @@ NEW-TAG is the new name to give to the tag."
   (interactive)
   (unless (habitica-api-accept-party-quest)
     (message "No acceptable party quest!")))
+
+(defun habitica-allocate-a-stat-point (&optional stat)
+  "Allocate a stat point."
+  (interactive)
+  (let* ((user-data (habitica--send-request (format "/user?userFields=stats") "GET" ""))
+         (stats-data (assoc-default 'stats user-data))
+         (points (assoc-default 'points stats-data))
+         (flags-data (assoc-default 'flags user-data))
+         (classSelected (assoc-default 'classSelected flags-data)))
+    (unless (> points 0)
+      (message "no point to allocate!"))
+    (unless (equal classSelected t)
+      (message "class not selected!"))
+    (when (and (equal classSelected t)
+               (> points 0))
+      (message "remain %s points,allocate a point to %s point" points stat)
+      (habitica-api-allocate-a-stat-point stat)
+      (- points 1))))
 
 (defun habitica-feed-pet-to-full (&optional pet food)
   "Feed PET using FOOD until It is full."
