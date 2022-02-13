@@ -438,6 +438,11 @@ Options are 0.1, 1, 1.5, 2; eqivalent of Trivial, Easy, Medium, Hard."
     (when (member stat valid-stats)
       (habitica--send-request (format "/user/allocate?stat=%s" stat) "POST" ""))))
 
+(defun habitica-api-buy-armoire ()
+  "Buy armoire"
+  (when (> habitica-gold 100)
+    (habitica--send-request "/user/buy-armoire" "POST" "")))
+
 ;;;; Utilities
 (defun habitica--task-checklist (task)
   "Get checklist items from `TASK'"
@@ -922,6 +927,12 @@ NEW-TAG is the new name to give to the tag."
       (message "remain %s points,allocate a point to %s point" points stat)
       (habitica-api-allocate-a-stat-point stat)
       (- points 1))))
+
+(defun habitica-buy-armoire ()
+  "Buy armoire."
+  (interactive)
+  (when (habitica-api-buy-armoire)
+    (habitica--refresh-profile)))
 
 (defun habitica-feed-pet-to-full (&optional pet food)
   "Feed PET using FOOD until It is full."
