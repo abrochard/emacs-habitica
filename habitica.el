@@ -319,6 +319,12 @@ DIRECTION is up or down, if the task is a habit."
   "Get user's tags."
   (habitica--send-request "/tags" "GET" ""))
 
+(defun habitica-api-need-cron-p ()
+  "Need to run cron or not."
+  (let ((needsCron (assoc-default 'needsCron (habitica-api-get-profile))))
+    (message "needsCron=%s" needsCron)
+    (equal needsCron t)))
+
 (defun habitica-api-cron ()
   "Runs cron"
   (habitica--send-request "/cron" "POST" ""))
@@ -857,7 +863,8 @@ NEW-TAG is the new name to give to the tag."
 (defun habitica-cron ()
   "Runs cron"
   (interactive)
-  (habitica-api-cron))
+  (when (habitica-api-need-cron-p)
+    (habitica-api-cron)))
 
 (defun habitica-feed-pet-to-full (&optional pet food)
   "Feed PET using FOOD until It is full."
