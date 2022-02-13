@@ -422,6 +422,15 @@ Options are 0.1, 1, 1.5, 2; eqivalent of Trivial, Easy, Medium, Hard."
             (> habitica-gold 15))
     (habitica--send-request "/user/buy-health-potion" "POST" "")))
 
+(defun habitica-api-accept-party-quest ()
+  "Accept party quest."
+  (let* ((user-data (habitica--send-request (format "/user?userFields=party") "GET" ""))
+         (party-data (assoc-default 'party user-data))
+         (quest-data (assoc-default 'quest party-data))
+         (RSVPNeeded (assoc-default 'RSVPNeeded quest-data)))
+    (when (equal RSVPNeeded t)
+        (habitica--send-request (format "/groups/party/quests/accept") "POST" ""))))
+
 ;;;; Utilities
 (defun habitica--task-checklist (task)
   "Get checklist items from `TASK'"
@@ -883,6 +892,12 @@ NEW-TAG is the new name to give to the tag."
     (when stats
       (habitica--refresh-profile stats))))
 
+(defun habitica-accept-party-quest ()
+  "Accept party quest."
+  (interactive)
+  (unless (habitica-api-accept-party-quest)
+    (message "No acceptable party quest!")))
+
 (defun habitica-feed-pet-to-full (&optional pet food)
   "Feed PET using FOOD until It is full."
   (interactive)
@@ -903,10 +918,10 @@ NEW-TAG is the new name to give to the tag."
            (food-name (completing-read "Select the Food: " potion-food-names)))
       (setq pet pet-name)
       (setq food food-name))
-      (message "feed %s with %s" pet food)
-      (let ((feed 0))
-        (while (>= feed 0)
-          (setq feed (habitica-api-feed-pet pet food))))))
+    (message "feed %s with %s" pet food)
+    (let ((feed 0))
+      (while (>= feed 0)
+        (setq feed (habitica-api-feed-pet pet food))))))
 
 (defun habitica-publish2group (&optional group-name)
   (interactive)
