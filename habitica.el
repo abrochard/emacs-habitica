@@ -319,6 +319,11 @@ DIRECTION is up or down, if the task is a habit."
   "Get user's tags."
   (habitica--send-request "/tags" "GET" ""))
 
+(defun habitica-api-need-cron-p ()
+  "Need to run cron or not."
+  (let ((needsCron (assoc-default 'needsCron (habitica-api-get-profile))))
+    (equal needsCron t)))
+
 (defun habitica-api-cron ()
   "Runs cron"
   (habitica--send-request "/cron" "POST" ""))
@@ -409,6 +414,34 @@ Options are 0.1, 1, 1.5, 2; eqivalent of Trivial, Easy, Medium, Hard."
                                (format "?targetId=%s" target-id)
                              "")))
     (habitica--send-request (format "/user/class/cast/%s%s" spell query-paramaters) "POST" "")))
+
+(defun habitica-api-buy-health-potion ()
+  "Buy health potion."
+  (when (and  (< habitica-hp habitica-max-hp)
+            (> habitica-gold 15))
+    (habitica--send-request "/user/buy-health-potion" "POST" "")))
+
+(defun habitica-api-accept-party-quest ()
+  "Accept party quest."
+  (let* ((user-data (habitica--send-request (format "/user?userFields=party") "GET" ""))
+         (party-data (assoc-default 'party user-data))
+         (quest-data (assoc-default 'quest party-data))
+         (RSVPNeeded (assoc-default 'RSVPNeeded quest-data)))
+    (when (equal RSVPNeeded t)
+        (habitica--send-request (format "/groups/party/quests/accept") "POST" ""))))
+
+(defun habitica-api-allocate-a-stat-point (&optional stat)
+  "Allocate a stat point."
+  (let* ((valid-stats '("str" "con" "int" "per"))
+         (stat (or stat
+                   (completing-read "Select a stat: " valid-stats))))
+    (when (member stat valid-stats)
+      (habitica--send-request (format "/user/allocate?stat=%s" stat) "POST" ""))))
+
+(defun habitica-api-buy-armoire ()
+  "Buy armoire"
+  (when (> habitica-gold 100)
+    (habitica--send-request "/user/buy-armoire" "POST" "")))
 
 ;;;; Utilities
 (defun habitica--task-checklist (task)
@@ -692,13 +725,16 @@ TO-NEXT-LEVEL is the experience required to reach the next level."
   "Set the profile variables.
 
 PROFILE is the JSON formatted response."
-  (setq habitica-level (assoc-default 'lvl profile)) ;get level
-  (setq habitica-exp (round (assoc-default 'exp profile))) ;get exp
-  (setq habitica-max-exp (assoc-default 'toNextLevel profile)) ;get max experience
-  (setq habitica-hp (round (assoc-default 'hp profile))) ;get hp
-  (setq habitica-max-hp (assoc-default 'maxHealth profile)) ;get max hp
-  (setq habitica-mp (round (assoc-default 'mp profile))) ;get mp
-  (setq habitica-max-mp (assoc-default 'maxMP profile)) ;get max mp
+  (setq habitica-level (assoc-default 'lvl profile))           ;get level
+  (setq habitica-exp (round (assoc-default 'exp profile)))     ;get exp
+  (when (assoc-default 'toNextLevel profile)
+    (setq habitica-max-exp (assoc-default 'toNextLevel profile))) ;get max experience
+  (setq habitica-hp (round (assoc-default 'hp profile)))       ;get hp
+  (when (assoc-default 'maxHealth profile)
+    (setq habitica-max-hp (assoc-default 'maxHealth profile)))    ;get max hp
+  (setq habitica-mp (round (assoc-default 'mp profile)))       ;get mp
+  (when (assoc-default 'maxMP profile)
+    (setq habitica-max-mp (assoc-default 'maxMP profile)))        ;get max mp
   (setq habitica-gold (string-to-number (format "%d" (assoc-default 'gp profile)))) ;get gold
   (setq habitica-silver (string-to-number (format "%d" (* 100 (- (assoc-default 'gp profile) habitica-gold))))) ;get silver
   (setq habitica-class (assoc-default 'class stats))
@@ -748,13 +784,14 @@ SHOW-NOTIFICATION, if true, it will add notification tags."
     (if show-notification
         (habitica--show-notifications current-level old-level current-exp old-exp to-next-level))))
 
-(defun habitica--refresh-profile ()
+(defun habitica--refresh-profile (&optional stats)
   "Kill the current profile and parse a new one."
   (with-current-buffer habitica-buffer-name
     (save-excursion
       (progn (re-search-backward "^\* Stats" (point-min) t)
              (org-cut-subtree)
-             (habitica--parse-profile (assoc-default 'stats (habitica-api-get-profile)) t)))))
+             (habitica--parse-profile (or stats
+                                          (assoc-default 'stats (habitica-api-get-profile))) t)))))
 
 (defun habitica--get-tags ()
   "Get the dictionary id/tags."
@@ -857,7 +894,45 @@ NEW-TAG is the new name to give to the tag."
 (defun habitica-cron ()
   "Runs cron"
   (interactive)
-  (habitica-api-cron))
+  (when (habitica-api-need-cron-p)
+    (habitica-api-cron)))
+
+(defun habitica-buy-health-potion ()
+  "Buy health potion."
+  (interactive)
+  (let ((stats (habitica-api-buy-health-potion)))
+    (when stats
+      (habitica--refresh-profile stats))))
+
+(defun habitica-accept-party-quest ()
+  "Accept party quest."
+  (interactive)
+  (unless (habitica-api-accept-party-quest)
+    (message "No acceptable party quest!")))
+
+(defun habitica-allocate-a-stat-point (&optional stat)
+  "Allocate a stat point."
+  (interactive)
+  (let* ((user-data (habitica--send-request (format "/user?userFields=stats") "GET" ""))
+         (stats-data (assoc-default 'stats user-data))
+         (points (assoc-default 'points stats-data))
+         (flags-data (assoc-default 'flags user-data))
+         (classSelected (assoc-default 'classSelected flags-data)))
+    (unless (> points 0)
+      (message "no point to allocate!"))
+    (unless (equal classSelected t)
+      (message "class not selected!"))
+    (when (and (equal classSelected t)
+               (> points 0))
+      (message "remain %s points,allocate a point to %s point" points stat)
+      (habitica-api-allocate-a-stat-point stat)
+      (- points 1))))
+
+(defun habitica-buy-armoire ()
+  "Buy armoire."
+  (interactive)
+  (when (habitica-api-buy-armoire)
+    (habitica--refresh-profile)))
 
 (defun habitica-feed-pet-to-full (&optional pet food)
   "Feed PET using FOOD until It is full."
@@ -879,10 +954,10 @@ NEW-TAG is the new name to give to the tag."
            (food-name (completing-read "Select the Food: " potion-food-names)))
       (setq pet pet-name)
       (setq food food-name))
-      (message "feed %s with %s" pet food)
-      (let ((feed 0))
-        (while (>= feed 0)
-          (setq feed (habitica-api-feed-pet pet food))))))
+    (message "feed %s with %s" pet food)
+    (let ((feed 0))
+      (while (>= feed 0)
+        (setq feed (habitica-api-feed-pet pet food))))))
 
 (defun habitica-publish2group (&optional group-name)
   (interactive)
