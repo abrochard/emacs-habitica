@@ -322,7 +322,6 @@ DIRECTION is up or down, if the task is a habit."
 (defun habitica-api-need-cron-p ()
   "Need to run cron or not."
   (let ((needsCron (assoc-default 'needsCron (habitica-api-get-profile))))
-    (message "needsCron=%s" needsCron)
     (equal needsCron t)))
 
 (defun habitica-api-cron ()
@@ -430,6 +429,7 @@ Options are 0.1, 1, 1.5, 2; eqivalent of Trivial, Easy, Medium, Hard."
          (RSVPNeeded (assoc-default 'RSVPNeeded quest-data)))
     (when (equal RSVPNeeded t)
         (habitica--send-request (format "/groups/party/quests/accept") "POST" ""))))
+
 (defun habitica-api-allocate-a-stat-point (&optional stat)
   "Allocate a stat point."
   (let* ((valid-stats '("str" "con" "int" "per"))
