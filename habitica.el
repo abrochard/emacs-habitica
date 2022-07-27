@@ -915,7 +915,7 @@ NEW-TAG is the new name to give to the tag."
   (interactive)
   (let* ((user-data (habitica--send-request (format "/user?userFields=stats") "GET" ""))
          (stats-data (assoc-default 'stats user-data))
-         (points (assoc-default 'points stats-data))
+         (points (assoc-default 'points stats-data nil 0))
          (flags-data (assoc-default 'flags user-data))
          (classSelected (assoc-default 'classSelected flags-data)))
     (unless (> points 0)
