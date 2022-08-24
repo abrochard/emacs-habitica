@@ -737,7 +737,7 @@ PROFILE is the JSON formatted response."
     (setq habitica-max-mp (assoc-default 'maxMP profile)))        ;get max mp
   (setq habitica-gold (string-to-number (format "%d" (assoc-default 'gp profile)))) ;get gold
   (setq habitica-silver (string-to-number (format "%d" (* 100 (- (assoc-default 'gp profile) habitica-gold))))) ;get silver
-  (setq habitica-class (assoc-default 'class stats))
+  (setq habitica-class (assoc-default 'class profile))
   )
 
 (defun habitica--format-status-bar (current max length)
