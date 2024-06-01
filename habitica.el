@@ -145,7 +145,7 @@
 
 (defvar habitica-status-bar-length 20)
 
-(defvar habitica-difficulty '((1 . "easy") (1.5 . "medium") (2 . "hard"))
+(defvar habitica-difficulty '((0.1 . "trivial")(1 . "easy") (1.5 . "medium") (2 . "hard"))
   "Assoc list of priority/difficulty.")
 
 (defvar habitica-spells '(("mage" "fireball" "mpheal" "earth" "frost")
@@ -1055,9 +1055,9 @@ TYPE specify the new task's type ."
   "Set a difficulty level for a task.
 
 LEVEL index from 1 to 3."
-  (interactive "nEnter the difficulty level, 1 (easy) 2 (medium) 3 (hard): ")
+  (interactive "nEnter the difficulty level, 0 (trivial) 1 (easy) 2 (medium) 3 (hard): ")
   (let* ((id (org-element-property :HABITICA_ID (org-element-at-point)))
-         (difficulty (format "%s" (car (nth (- level 1) habitica-difficulty))))
+         (difficulty (format "%s" (car (nth level habitica-difficulty))))
          (task (habitica-api-set-difficulty id difficulty)))
     (beginning-of-line)
     (kill-line)
