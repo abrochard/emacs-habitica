@@ -658,13 +658,17 @@ TASK is the parsed JSON response."
   (habitica--update-properties task)
   (when (string= "daily" (format "%s" (habitica--task-type task)))
     (let* ((frequency (assoc-default 'frequency task))
-           (everyX (assoc-default 'everyX task))
-           (nextDue (or (aref (assoc-default 'nextDue task) 0)
-                        (current-time-string)))
-           (nextDue (if (string-match-p "Z$" nextDue)
-                        (replace-regexp-in-string "T" " " nextDue)
-                      nextDue))
-           (time (format "<%s +%s%s>" (format-time-string "%Y-%m-%d" (apply #'encode-time (parse-time-string nextDue))) everyX frequency)))
+         (everyX (assoc-default 'everyX task))
+         (nextDueList (assoc-default 'nextDue task))
+         (nextDue (or (car nextDueList)
+                      (current-time-string)))
+         (nextDue (if (string-match-p "Z$" nextDue)
+                      (replace-regexp-in-string "T" " " nextDue)
+                    nextDue))
+         (time (format "<%s +%s%s>"
+                       (format-time-string "%Y-%m-%d"
+                                           (apply #'encode-time (parse-time-string nextDue)))
+                       everyX frequency)))
       (org-schedule 4 time)))
   (if habitica-turn-on-highlighting
       (catch 'aaa
