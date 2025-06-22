@@ -249,7 +249,7 @@ Logs full request and response details for debugging."
           `(("Content-Type" . "application/json")
             ("x-api-user"   . ,habitica-uid)
             ("x-api-key"    . ,habitica-token)
-            ("X-Client"     . ,x-client-header)))
+            ("x-client"     . ,x-client-header)))
          (url-request-data
           (when (and (member type '("POST" "PUT")) data-alist)
             (encode-coding-string (json-encode data-alist) 'utf-8))))
