@@ -541,21 +541,28 @@ INDEX is the checklist item index."
                         (append (habitica--task-checklist task) nil)))))
 
 (defun habitica--insert-todo (task)
-  "Logic to insert TODO or DONE for a task.
+  "Insert an Org-mode TODO or DONE heading based on TASK data.
 
-TASK is the parsed JSON response."
-  (let ((type (habitica--task-type task))
+TASK is a parsed Habitica task JSON object."
+  (let ((type (format "%s" (habitica--task-type task)))
         (value (habitica--task-value task))
         (completed (habitica--task-completed task)))
-    (cond ((equal (format "%s" type) "habit")
-           (if (>= value habitica-habit-threshold)
-               (insert "** DONE ")
-             (insert "** TODO ")))
-          ((equal (format "%s" type) "daily")
-           (insert "** TODO "))
-          (t
-           (cond ((eq completed :json-false) (insert "** TODO "))
-                 ((eq completed t) (insert "** DONE ")))))))
+    (cond
+     ;; Habits use value threshold for DONE
+     ((string= type "habit")
+      (if (>= value habitica-habit-threshold)
+          (insert "** DONE ")
+        (insert "** TODO ")))
+
+     ;; Dailies and To-Dos respect `completed` flag
+     ((or (string= type "daily") (string= type "todo"))
+      (if (eq completed t)
+          (insert "** DONE ")
+        (insert "** TODO ")))
+
+     ;; Rewards or others, fallback
+     (t
+      (insert "** TODO ")))))
 
 (defun habitica--insert-deadline (task)
   "Insert the deadline for a particular task.
