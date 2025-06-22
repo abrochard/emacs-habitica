@@ -240,29 +240,36 @@
 ;;; Function
 ;;;; APIs
 (defun habitica--send-request (endpoint type &optional data-alist)
-  "Base function to send request to the Habitica API.
+  "Send a request to the Habitica API and return the parsed `data` field of the response.
 
-ENDPOINT can be found in the habitica doc.
-TYPE is the type of HTTP request (GET, POST, PUT, DELETE)
-DATA-ALIST is an optional alist of data to be sent, which will be
-converted to JSON for POST/PUT requests."
+ENDPOINT is a string like \"/tasks/task-id/score/up\"
+TYPE is \"GET\", \"POST\", etc.
+DATA-ALIST is a plist/alist to encode as JSON (for POST/PUT)."
   (let* ((url (concat habitica-base endpoint))
          (x-client-header (concat habitica-uid "-emacs-habitica"))
          (url-request-method type)
-         (url-request-extra-headers `(("Content-Type" . "application/json")
-                                      ("x-api-user" . ,habitica-uid)
-                                      ("x-api-key" . ,habitica-token)
-                                      ("x-client" . ,x-client-header)))
-         (url-request-data (when (or (string= type "POST") (string= type "PUT"))
-                             (json-encode data-alist))))
-    (with-current-buffer (url-retrieve-synchronously url)
+         (url-request-extra-headers
+          `(("Content-Type" . "application/json")
+            ("x-api-user"   . ,habitica-uid)
+            ("x-api-key"    . ,habitica-token)
+            ("x-client"     . ,x-client-header)))
+         (url-request-data
+          (when (member type '("POST" "PUT"))
+            (encode-coding-string (json-encode data-alist) 'utf-8))))
+    (with-current-buffer (url-retrieve-synchronously url t t)
       (goto-char (point-min))
-      ;; Habitica API sometimes returns non-JSON content before the actual JSON,
-      ;; so we search for the first '{' to start parsing from there.
-      (delete-region (point-min) (string-match-p "{" (buffer-string)))
-      (assoc-default 'data (json-read-from-string (decode-coding-string
-                                                   (buffer-string)
-                                                   'utf-8))))))
+      (unless (re-search-forward "^$" nil t)
+        (error "Malformed HTTP response"))
+      (let ((json-object-type 'alist)
+            (json-array-type  'list)
+            (json-key-type    'symbol))
+        (let* ((json (json-read))
+               (success (alist-get 'success json))
+               (message (alist-get 'message json))
+               (data    (alist-get 'data json)))
+          (unless success
+            (error "Habitica API error: %s" message))
+          data)))))
 
 (defun habitica-api-get-tasks ()
   "Gets all the user's tasks."
