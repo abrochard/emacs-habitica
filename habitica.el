@@ -255,25 +255,27 @@ Logs full request and response details for debugging."
             (encode-coding-string (json-encode data-alist) 'utf-8))))
 
     ;; Log request info
-    (message "[Habitica] === API REQUEST ===")
-    (message "[Habitica] Method: %s" type)
-    (message "[Habitica] Endpoint: %s" endpoint)
-    (message "[Habitica] Full URL: %s" url)
-    (message "[Habitica] Headers:")
+    ;; (message "[Habitica] === API REQUEST ===")
+    ;; (message "[Habitica] Method: %s" type)
+    ;; (message "[Habitica] Endpoint: %s" endpoint)
+    ;; (message "[Habitica] Full URL: %s" url)
+    ;; (message "[Habitica] Headers:")
     (dolist (header url-request-extra-headers)
-      (message "  %s: %s" (car header) (cdr header)))
-    (when url-request-data
-      (message "[Habitica] Body: %s" url-request-data))
+      ;; (message "  %s: %s" (car header) (cdr header))
+      )
+    ;; (when url-request-data
+    ;;   (message "[Habitica] Body: %s" url-request-data))
 
     (with-current-buffer (url-retrieve-synchronously url t t)
       (goto-char (point-min))
       (let ((status (when (boundp 'url-http-response-status)
                       url-http-response-status)))
-        (message "[Habitica] HTTP status: %s" status))
+        ;; (message "[Habitica] HTTP status: %s" status)
+        )
 
       ;; Show full raw response (for debugging)
-      (message "[Habitica] Raw HTTP response:\n%s"
-               (buffer-substring-no-properties (point-min) (point-max)))
+      ;; (message "[Habitica] Raw HTTP response:\n%s"
+      ;;          (buffer-substring-no-properties (point-min) (point-max)))
 
       ;; Move to beginning of body (after headers)
       (unless (re-search-forward "^$" nil t)
@@ -289,7 +291,7 @@ Logs full request and response details for debugging."
                (success (alist-get 'success json))
                (message (alist-get 'message json))
                (data    (alist-get 'data json)))
-          (message "[Habitica] Parsed JSON: %S" json)
+          ;; (message "[Habitica] Parsed JSON: %S" json)
           (unless success
             (error "[Habitica] API error: %s" message))
           data)))))
