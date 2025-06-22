@@ -241,10 +241,7 @@
 ;;;; APIs
 (defun habitica--send-request (endpoint type &optional data-alist)
   "Send a request to the Habitica API and return the parsed `data` field of the response.
-
-ENDPOINT is a string like \"/tasks/task-id/score/up\"
-TYPE is \"GET\", \"POST\", etc.
-DATA-ALIST is a plist/alist to encode as JSON (for POST/PUT)."
+Logs full request and response details for debugging."
   (let* ((url (concat habitica-base endpoint))
          (x-client-header (concat habitica-uid "-emacs-habitica"))
          (url-request-method type)
@@ -252,24 +249,51 @@ DATA-ALIST is a plist/alist to encode as JSON (for POST/PUT)."
           `(("Content-Type" . "application/json")
             ("x-api-user"   . ,habitica-uid)
             ("x-api-key"    . ,habitica-token)
-            ("x-client"     . ,x-client-header)))
+            ("X-Client"     . ,x-client-header)))
          (url-request-data
-          (when (member type '("POST" "PUT"))
+          (when (and (member type '("POST" "PUT")) data-alist)
             (encode-coding-string (json-encode data-alist) 'utf-8))))
+
+    ;; Log request info
+    (message "[Habitica] === API REQUEST ===")
+    (message "[Habitica] Method: %s" type)
+    (message "[Habitica] Endpoint: %s" endpoint)
+    (message "[Habitica] Full URL: %s" url)
+    (message "[Habitica] Headers:")
+    (dolist (header url-request-extra-headers)
+      (message "  %s: %s" (car header) (cdr header)))
+    (when url-request-data
+      (message "[Habitica] Body: %s" url-request-data))
+
     (with-current-buffer (url-retrieve-synchronously url t t)
       (goto-char (point-min))
+      (let ((status (when (boundp 'url-http-response-status)
+                      url-http-response-status)))
+        (message "[Habitica] HTTP status: %s" status))
+
+      ;; Show full raw response (for debugging)
+      (message "[Habitica] Raw HTTP response:\n%s"
+               (buffer-substring-no-properties (point-min) (point-max)))
+
+      ;; Move to beginning of body (after headers)
       (unless (re-search-forward "^$" nil t)
-        (error "Malformed HTTP response"))
+        (error "[Habitica] Failed to find end of headers"))
+
       (let ((json-object-type 'alist)
             (json-array-type  'list)
             (json-key-type    'symbol))
-        (let* ((json (json-read))
+        (let* ((json (condition-case err
+                         (json-read)
+                       (error
+                        (error "[Habitica] Failed to parse JSON: %s" err))))
                (success (alist-get 'success json))
                (message (alist-get 'message json))
                (data    (alist-get 'data json)))
+          (message "[Habitica] Parsed JSON: %S" json)
           (unless success
-            (error "Habitica API error: %s" message))
+            (error "[Habitica] API error: %s" message))
           data)))))
+
 
 (defun habitica-api-get-tasks ()
   "Gets all the user's tasks."
@@ -759,14 +783,23 @@ PROFILE is the JSON formatted response."
 (defun habitica--format-status-bar (current max length)
   "Formats the current value as an ASCII progress bar.
 
-CURRENT is the current value
-MAX is the max value
+CURRENT is the current value.
+MAX is the max value.
 LENGTH is the total number of characters in the bar."
-  (if (< max current) (setq max current) nil)
-  (concat "["
-          (make-string (truncate (round (* (/ (float current) max) length))) ?#)
-          (make-string (truncate (round (* (/ (float (- max current)) max) length))) ?-)
-          "]"))
+  ;; Clamp current value to the range [0, max]
+  (setq current (min current max))
+  (setq current (max current 0))
+
+  ;; Avoid division by zero
+  (unless (> max 0)
+    (setq max 1))
+
+  (let* ((filled-len (truncate (round (* (/ (float current) max) length))))
+         (empty-len (- length filled-len)))
+    (concat "["
+            (make-string filled-len ?#)
+            (make-string empty-len ?-)
+            "]")))
 
 (defun habitica--parse-profile (stats show-notification)
   "Formats the user stats as a header.
