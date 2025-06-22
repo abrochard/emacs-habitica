@@ -239,30 +239,71 @@
 
 ;;; Function
 ;;;; APIs
-(defun habitica--send-request (endpoint type data)
-  "Base function to send request to the Habitica API.
+(defun habitica--send-request (endpoint type &optional data-alist)
+  "Send a request to the Habitica API and return the parsed `data` field of the response.
+Logs full request and response details for debugging."
+  (let* ((url (concat habitica-base endpoint))
+         (x-client-header (concat habitica-uid "-emacs-habitica"))
+         (url-request-method type)
+         (url-request-extra-headers
+          `(("Content-Type" . "application/json")
+            ("x-api-user"   . ,habitica-uid)
+            ("x-api-key"    . ,habitica-token)
+            ("x-client"     . ,x-client-header)))
+         (url-request-data
+          (when (and (member type '("POST" "PUT")) data-alist)
+            (encode-coding-string (json-encode data-alist) 'utf-8))))
 
-ENDPOINT can be found in the habitica doc.
-TYPE is the type of HTTP request (GET, POST, DELETE)
-DATA is the form to be sent as x-www-form-urlencoded."
-  (let ((url  (concat habitica-base endpoint))
-        (url-request-method        type)
-        (url-request-extra-headers `(("Content-Type" . "application/x-www-form-urlencoded") ("x-api-user" . ,habitica-uid) ("x-api-key" . ,habitica-token)))
-        (url-request-data          data))
-    (with-current-buffer (url-retrieve-synchronously url)
+    ;; Log request info
+    ;; (message "[Habitica] === API REQUEST ===")
+    ;; (message "[Habitica] Method: %s" type)
+    ;; (message "[Habitica] Endpoint: %s" endpoint)
+    ;; (message "[Habitica] Full URL: %s" url)
+    ;; (message "[Habitica] Headers:")
+    (dolist (header url-request-extra-headers)
+      ;; (message "  %s: %s" (car header) (cdr header))
+      )
+    ;; (when url-request-data
+    ;;   (message "[Habitica] Body: %s" url-request-data))
+
+    (with-current-buffer (url-retrieve-synchronously url t t)
       (goto-char (point-min))
-      (delete-region (point-min) (string-match-p "{" (buffer-string)))
-      (assoc-default 'data (json-read-from-string (decode-coding-string
-                                                   (buffer-string)
-                                                   'utf-8))))))
+      (let ((status (when (boundp 'url-http-response-status)
+                      url-http-response-status)))
+        ;; (message "[Habitica] HTTP status: %s" status)
+        )
+
+      ;; Show full raw response (for debugging)
+      ;; (message "[Habitica] Raw HTTP response:\n%s"
+      ;;          (buffer-substring-no-properties (point-min) (point-max)))
+
+      ;; Move to beginning of body (after headers)
+      (unless (re-search-forward "^$" nil t)
+        (error "[Habitica] Failed to find end of headers"))
+
+      (let ((json-object-type 'alist)
+            (json-array-type  'list)
+            (json-key-type    'symbol))
+        (let* ((json (condition-case err
+                         (json-read)
+                       (error
+                        (error "[Habitica] Failed to parse JSON: %s" err))))
+               (success (alist-get 'success json))
+               (message (alist-get 'message json))
+               (data    (alist-get 'data json)))
+          ;; (message "[Habitica] Parsed JSON: %S" json)
+          (unless success
+            (error "[Habitica] API error: %s" message))
+          data)))))
+
 
 (defun habitica-api-get-tasks ()
   "Gets all the user's tasks."
-  (habitica--send-request "/tasks/user" "GET" ""))
+  (habitica--send-request "/tasks/user" "GET"))
 
 (defun habitica-api-get-completed-tasks ()
   "Gets all the completed user's tasks."
-  (habitica--send-request "/tasks/user?type=completedTodos" "GET" ""))
+  (habitica--send-request "/tasks/user?type=completedTodos" "GET"))
 
 (defun habitica-api-get-task-id-by-name (&optional name)
   "Get a task id by NAME."
@@ -279,7 +320,7 @@ DATA is the form to be sent as x-www-form-urlencoded."
   "Get a task from task id.
 
 ID is the task id."
-  (habitica--send-request (concat "/tasks/" id) "GET" ""))
+  (habitica--send-request (concat "/tasks/" id) "GET"))
 
 (defun habitica-api-get-task-by-name (&optional name)
   "Get a task from task NAME."
@@ -292,16 +333,17 @@ ID is the task id."
 TYPE is the type of task that you want to create (habit, daily, or todo)
 NAME is the task name
 DOWN is optional, in case of a habit, if you want to be able to downvote the task."
-  (if down
-      (habitica--send-request "/tasks/user" "POST" (concat "type=" type "&text=" (url-encode-url name) "&down=" down))
-    (habitica--send-request "/tasks/user" "POST" (concat "type=" type "&text=" (url-encode-url name)))))
+  (let ((data-alist `((type . ,type) (text . ,name))))
+    (when down
+      (setq data-alist (append data-alist `((down . ,down)))))
+    (habitica--send-request "/tasks/user" "POST" data-alist)))
 
 (defun habitica-api-score-task (id direction)
   "Send a post request to score a task.
 
 ID is the id of the task that you are scoring
 DIRECTION is up or down, if the task is a habit."
-  (habitica--send-request (concat "/tasks/" id "/score/" direction) "POST" ""))
+  (habitica--send-request (concat "/tasks/" id "/score/" direction) "POST"))
 
 (defun habitica-api-score-task-by-name (name direction)
   "Send a post request to score a task.
@@ -313,11 +355,11 @@ DIRECTION is up or down, if the task is a habit."
 
 (defun habitica-api-get-profile ()
   "Get the user's raw profile data."
-  (habitica--send-request "/user" "GET" ""))
+  (habitica--send-request "/user" "GET"))
 
 (defun habitica-api-get-tags ()
   "Get user's tags."
-  (habitica--send-request "/tags" "GET" ""))
+  (habitica--send-request "/tags" "GET"))
 
 (defun habitica-api-need-cron-p ()
   "Need to run cron or not."
@@ -326,70 +368,70 @@ DIRECTION is up or down, if the task is a habit."
 
 (defun habitica-api-cron ()
   "Runs cron"
-  (habitica--send-request "/cron" "POST" ""))
+  (habitica--send-request "/cron" "POST"))
 
 (defun habitica-api-set-date (id date)
   "Update a task's due date.
 
 Only valid for type "todo.""
-  (habitica--send-request (concat "/tasks/" id) "PUT" (concat "&date=" date)))
+  (habitica--send-request (concat "/tasks/" id) "PUT" `((date . ,date))))
 
 (defun habitica-api-set-difficulty (id difficulty)
   "Update a task's difficulty.
 Options are 0.1, 1, 1.5, 2; eqivalent of Trivial, Easy, Medium, Hard."
   (habitica--send-request (concat "/tasks/" id) "PUT"
-                          (concat "&priority=" difficulty)))
+                          `((priority . ,difficulty))))
 
 (defun habitica-api-delete-task (id)
   "Delete a task"
-  (habitica--send-request (concat "/tasks/" id) "DELETE" ""))
+  (habitica--send-request (concat "/tasks/" id) "DELETE"))
 
 (defun habitica-api-create-tag (name)
   "Create a new tag."
-  (habitica--send-request "/tags" "POST" (concat "name=" name)))
+  (habitica--send-request "/tags" "POST" `((name . ,name))))
 
 (defun habitica-api-delete-tag (id)
   "Delete a user tag given its id."
-  (habitica--send-request (concat "/tags/" id) "DELETE" ""))
+  (habitica--send-request (concat "/tags/" id) "DELETE"))
 
 (defun habitica-api-rename-tag (tag-id name)
   "rename the tag"
-  (habitica--send-request (concat "/tags/" tag-id) "PUT" (concat "name=" name)))
+  (habitica--send-request (concat "/tags/" tag-id) "PUT" `((name . ,name))))
 
 (defun habitica-api-add-tag-to-task (task-id tag-id)
   "Add a tag to a task."
-  (habitica--send-request (concat "/tasks/" task-id "/tags/" tag-id) "POST" ""))
+  (habitica--send-request (concat "/tasks/" task-id "/tags/" tag-id) "POST"))
 
 (defun habitica-api-remove-tag-from-task (task-id tag-id)
   "Delete a tag from a task."
-  (habitica--send-request (concat "/tasks/" task-id "/tags/" tag-id) "DELETE" ""))
+  (habitica--send-request (concat "/tasks/" task-id "/tags/" tag-id) "DELETE"))
 
 (defun habitica-api-score-checklist-item (task-id item-id)
   "Score a checklist item."
-  (habitica--send-request (concat "/tasks/" task-id "/checklist/" item-id "/score") "POST" ""))
+  (habitica--send-request (concat "/tasks/" task-id "/checklist/" item-id "/score") "POST"))
 
 (defun habitica-api-add-item-to-checklist (task-id text)
   "Add an item to the task's checklist."
   (habitica--send-request (concat "/tasks/" task-id "/checklist/")
-                          "POST" (concat "text=" text)))
+                          "POST" `((text . ,text))))
 
 (defun habitica-api-rename-checklist-item (task-id item-id text)
   "Update a checklist item."
-  (habitica--send-request (concat "/tasks/" task-id "/checklist/" item-id) "PUT" (concat "text=" text)))
+  (habitica--send-request (concat "/tasks/" task-id "/checklist/" item-id) "PUT" `((text . ,text))))
 
 (defun habitica-api-delete-checklist-item-from-task (task-id item-id)
   "Delete a checklist item from a task."
-  (habitica--send-request (concat "/tasks/" task-id "/checklist/" item-id) "DELETE" ""))
+  (habitica--send-request (concat "/tasks/" task-id "/checklist/" item-id) "DELETE"))
 
 (defun habitica-api-feed-pet (pet food)
   "Feed PET using FOOD."
-  (habitica--send-request (format "/user/feed/%s/%s" pet food) "POST" ""))
+  (habitica--send-request (format "/user/feed/%s/%s" pet food) "POST"))
 
 (defun habitica-api-get-groups (&rest types)
   "Get groups which type is in TYPES."
   (let* ((types (or types '("party" "guilds" "privateGuilds" "publicGuilds" "tavern")))
          (types (string-join types ",")))
-    (habitica--send-request (format "/groups?type=%s" (url-encode-url types)) "GET" "")))
+    (habitica--send-request (format "/groups?type=%s" (url-encode-url types)) "GET")))
 
 (defun habitica-api-get-group-id (&optional name)
   "Get the id of group which name is NAME"
@@ -404,31 +446,31 @@ Options are 0.1, 1, 1.5, 2; eqivalent of Trivial, Easy, Medium, Hard."
 
 (defun habitica-api-chat2group (message group-id)
   "Post chat MESSAGE to a group."
-  (habitica--send-request (format "/groups/%s/chat" group-id) "POST" (concat "message=" (url-encode-url message))))
+  (habitica--send-request (format "/groups/%s/chat" group-id) "POST" `((message . ,message))))
 
 (defun habitica-api-cast-skill (&optional spell target-id)
   (let* ((available-spells (cdr (assoc-string habitica-class habitica-spells)))
          (spell (or spell
                     (completing-read "Select a skill: " available-spells)))
          (query-paramaters (if target-id
-                               (format "?targetId=%s" target-id)
-                             "")))
-    (habitica--send-request (format "/user/class/cast/%s%s" spell query-paramaters) "POST" "")))
+                               `((targetId . ,target-id))
+                             nil)))
+    (habitica--send-request (format "/user/class/cast/%s" spell) "POST" query-paramaters)))
 
 (defun habitica-api-buy-health-potion ()
   "Buy health potion."
-  (when (and  (< habitica-hp habitica-max-hp)
-            (> habitica-gold 15))
-    (habitica--send-request "/user/buy-health-potion" "POST" "")))
+  (when (and (< habitica-hp habitica-max-hp)
+             (> habitica-gold 15))
+    (habitica--send-request "/user/buy-health-potion" "POST")))
 
 (defun habitica-api-accept-party-quest ()
   "Accept party quest."
-  (let* ((user-data (habitica--send-request (format "/user?userFields=party") "GET" ""))
+  (let* ((user-data (habitica--send-request (format "/user?userFields=party") "GET"))
          (party-data (assoc-default 'party user-data))
          (quest-data (assoc-default 'quest party-data))
          (RSVPNeeded (assoc-default 'RSVPNeeded quest-data)))
     (when (equal RSVPNeeded t)
-        (habitica--send-request (format "/groups/party/quests/accept") "POST" ""))))
+      (habitica--send-request (format "/groups/party/quests/accept") "POST"))))
 
 (defun habitica-api-allocate-a-stat-point (&optional stat)
   "Allocate a stat point."
@@ -436,12 +478,12 @@ Options are 0.1, 1, 1.5, 2; eqivalent of Trivial, Easy, Medium, Hard."
          (stat (or stat
                    (completing-read "Select a stat: " valid-stats))))
     (when (member stat valid-stats)
-      (habitica--send-request (format "/user/allocate?stat=%s" stat) "POST" ""))))
+      (habitica--send-request (format "/user/allocate" ) "POST" `((stat . ,stat))))))
 
 (defun habitica-api-buy-armoire ()
   "Buy armoire"
   (when (> habitica-gold 100)
-    (habitica--send-request "/user/buy-armoire" "POST" "")))
+    (habitica--send-request "/user/buy-armoire" "POST")))
 
 ;;;; Utilities
 (defun habitica--task-checklist (task)
@@ -499,21 +541,28 @@ INDEX is the checklist item index."
                         (append (habitica--task-checklist task) nil)))))
 
 (defun habitica--insert-todo (task)
-  "Logic to insert TODO or DONE for a task.
+  "Insert an Org-mode TODO or DONE heading based on TASK data.
 
-TASK is the parsed JSON response."
-  (let ((type (habitica--task-type task))
+TASK is a parsed Habitica task JSON object."
+  (let ((type (format "%s" (habitica--task-type task)))
         (value (habitica--task-value task))
         (completed (habitica--task-completed task)))
-    (cond ((equal (format "%s" type) "habit")
-           (if (>= value habitica-habit-threshold)
-               (insert "** DONE ")
-             (insert "** TODO ")))
-          ((equal (format "%s" type) "daily")
-           (insert "** TODO "))
-          (t
-           (cond ((eq completed :json-false) (insert "** TODO "))
-                 ((eq completed t) (insert "** DONE ")))))))
+    (cond
+     ;; Habits use value threshold for DONE
+     ((string= type "habit")
+      (if (>= value habitica-habit-threshold)
+          (insert "** DONE ")
+        (insert "** TODO ")))
+
+     ;; Dailies and To-Dos respect `completed` flag
+     ((or (string= type "daily") (string= type "todo"))
+      (if (eq completed t)
+          (insert "** DONE ")
+        (insert "** TODO ")))
+
+     ;; Rewards or others, fallback
+     (t
+      (insert "** TODO ")))))
 
 (defun habitica--insert-deadline (task)
   "Insert the deadline for a particular task.
@@ -561,9 +610,9 @@ TASK is the parsed JSON reponse."
          (tags (mapcar #'habitica--tag-explainer tag-ids))
          (priority (habitica--priority-explainer (habitica--task-priority task))))
     (habitica--set-tags (append
-                      tags
-                      (list priority)
-                      (habitica--get-streak-as-list task)))))
+                         tags
+                         (list priority)
+                         (habitica--get-streak-as-list task)))))
 
 (defun habitica--get-streak-as-list (task)
   "Get the streak formated as a single element list.
@@ -618,13 +667,17 @@ TASK is the parsed JSON response."
   (habitica--update-properties task)
   (when (string= "daily" (format "%s" (habitica--task-type task)))
     (let* ((frequency (assoc-default 'frequency task))
-           (everyX (assoc-default 'everyX task))
-           (nextDue (or (aref (assoc-default 'nextDue task) 0)
-                        (current-time-string)))
-           (nextDue (if (string-match-p "Z$" nextDue)
-                        (replace-regexp-in-string "T" " " nextDue)
-                      nextDue))
-           (time (format "<%s +%s%s>" (format-time-string "%Y-%m-%d" (apply #'encode-time (parse-time-string nextDue))) everyX frequency)))
+         (everyX (assoc-default 'everyX task))
+         (nextDueList (assoc-default 'nextDue task))
+         (nextDue (or (car nextDueList)
+                      (current-time-string)))
+         (nextDue (if (string-match-p "Z$" nextDue)
+                      (replace-regexp-in-string "T" " " nextDue)
+                    nextDue))
+         (time (format "<%s +%s%s>"
+                       (format-time-string "%Y-%m-%d"
+                                           (apply #'encode-time (parse-time-string nextDue)))
+                       everyX frequency)))
       (org-schedule 4 time)))
   (if habitica-turn-on-highlighting
       (catch 'aaa
@@ -743,14 +796,23 @@ PROFILE is the JSON formatted response."
 (defun habitica--format-status-bar (current max length)
   "Formats the current value as an ASCII progress bar.
 
-CURRENT is the current value
-MAX is the max value
+CURRENT is the current value.
+MAX is the max value.
 LENGTH is the total number of characters in the bar."
-  (if (< max current) (setq max current) nil)
-  (concat "["
-          (make-string (truncate (round (* (/ (float current) max) length))) ?#)
-          (make-string (truncate (round (* (/ (float (- max current)) max) length))) ?-)
-          "]"))
+  ;; Clamp current value to the range [0, max]
+  (setq current (min current max))
+  (setq current (max current 0))
+
+  ;; Avoid division by zero
+  (unless (> max 0)
+    (setq max 1))
+
+  (let* ((filled-len (truncate (round (* (/ (float current) max) length))))
+         (empty-len (- length filled-len)))
+    (concat "["
+            (make-string filled-len ?#)
+            (make-string empty-len ?-)
+            "]")))
 
 (defun habitica--parse-profile (stats show-notification)
   "Formats the user stats as a header.
@@ -888,7 +950,6 @@ NEW-TAG is the new name to give to the tag."
             (org-set-property "HABITICA_VALUE" new-score))
           )))))
 
-
 ;;;; Interactive
 
 (defun habitica-cron ()
@@ -913,7 +974,7 @@ NEW-TAG is the new name to give to the tag."
 (defun habitica-allocate-a-stat-point (&optional stat)
   "Allocate a stat point."
   (interactive)
-  (let* ((user-data (habitica--send-request (format "/user?userFields=stats") "GET" ""))
+  (let* ((user-data (habitica--send-request (format "/user?userFields=stats") "GET"))
          (stats-data (assoc-default 'stats user-data))
          (points (assoc-default 'points stats-data))
          (flags-data (assoc-default 'flags user-data))
@@ -938,13 +999,13 @@ NEW-TAG is the new name to give to the tag."
   "Feed PET using FOOD until It is full."
   (interactive)
   (unless pet
-    (let* ((content (habitica--send-request "/content?language=en" "GET" nil))
+    (let* ((content (habitica--send-request "/content?language=en" "GET"))
            (all-pets (assoc-default 'petInfo content))
            (pet-names (mapcar #'car all-pets))
            (pet-name (completing-read "Select the Pet: " pet-names))
            (pet-info (cdr (assoc-string pet-name all-pets)))
            (potion (assoc-default 'potion pet-info))
-           (all-foods (assoc-default 'food b))
+           (all-foods (assoc-default 'food content)) ;; Use 'content' for all-foods
            (potion-foods (cl-remove-if-not (lambda (food-info)
                                              (let* ((food-attrs (cdr food-info))
                                                     (target (assoc-default 'target food-attrs)))
@@ -1089,8 +1150,8 @@ NAME is the name of the new tag."
   "Delete a tag and remove it from all tasks."
   (interactive)
   (let* ((index (habitica--choose-tag (mapcar 'cdr habitica-tags)
-                                     "Select the index of the tag to delete: "))
-        (id (car (nth index habitica-tags))))
+                                      "Select the index of the tag to delete: "))
+         (id (car (nth index habitica-tags))))
     (habitica-api-delete-tag id)
     (habitica--remove-tag-everywhere (cdr (nth index habitica-tags)))
     (setq habitica-tags (delete (nth index habitica-tags) habitica-tags))))
@@ -1099,9 +1160,9 @@ NAME is the name of the new tag."
   "Rename a tag and update it everywhere."
   (interactive)
   (let* ((index (habitica--choose-tag (mapcar 'cdr habitica-tags)
-                                     "Select the index of the tag to rename: "))
-        (name (read-string "Enter a new name: "))
-        (tag-id (car (nth index habitica-tags))))
+                                      "Select the index of the tag to rename: "))
+         (name (read-string "Enter a new name: "))
+         (tag-id (car (nth index habitica-tags))))
     (habitica-api-rename-tag tag-id name)
     (habitica--rename-tag-everywhere (cdr (nth index habitica-tags)) name)
     ;; rename in habitica-tags
@@ -1115,9 +1176,9 @@ NAME is the name of the new tag."
   "Add a tag to the task under the cursor."
   (interactive)
   (let* ((index (habitica--choose-tag (mapcar 'cdr habitica-tags)
-                                     "Select the index of the tag to add: "))
-        (task-id (org-element-property :HABITICA_ID (org-element-at-point)))
-        (tag-id (format "%s" (car (nth index habitica-tags)))))
+                                      "Select the index of the tag to add: "))
+         (task-id (org-element-property :HABITICA_ID (org-element-at-point)))
+         (tag-id (format "%s" (car (nth index habitica-tags)))))
     (habitica-api-add-tag-to-task task-id tag-id)
     (habitica--set-tags (append (cons (cdr (nth index habitica-tags)) nil) (org-get-tags)))))
 
@@ -1129,7 +1190,7 @@ NAME is the name of the new tag."
                                     (org-element-property :HABITICA_ID (org-element-at-point))
                                     "/tags/"
                                     (car (rassoc (nth index (org-get-tags)) habitica-tags)))
-                            "DELETE" "")
+                            "DELETE")
     (habitica--set-tags (delete (nth index (org-get-tags)) (org-get-tags)))))
 
 (defun habitica-score-checklist-item ()
@@ -1158,10 +1219,10 @@ TEXT is the checklist item name."
 TEXT is the checklist item new name."
   (interactive "sEnter the new item name: ")
   (let* ((task-id (habitica--get-current-task-id))
-        (done nil)
-        (item-id (habitica--get-checklist-item-id
-                  task-id
-                  (habitica--get-current-checklist-item-index))))
+         (done nil)
+         (item-id (habitica--get-checklist-item-id
+                   task-id
+                   (habitica--get-current-checklist-item-index))))
     ;; Determine if the item is checked
     (setq done (save-excursion
                  (goto-char (line-end-position))
@@ -1185,7 +1246,6 @@ TEXT is the checklist item new name."
   (kill-region (line-beginning-position) (+ 1 (line-end-position)))
   (org-update-checkbox-count))
 
-
 (defun habitica-login (username &optional password)
   "Login and retrives the user id and api token.
 
@@ -1194,11 +1254,13 @@ USERNAME is the user's username, PASSWORD is the user's password."
   (setq habitica-uid nil)
   (setq habitica-token nil)
   (let ((password (or password (read-passwd "Enter your password: "))))
-    (let ((url "https://habitica.com/api/v3/user/auth/local/login")
-          (url-request-method "POST")
-          (url-request-extra-headers `(("Content-Type" . "application/x-www-form-urlencoded")))
-          (url-request-data (concat "username=" username "&password=" password))
-          (data nil))
+    (let* ((url "https://habitica.com/api/v3/user/auth/local/login")
+           (x-client-header (concat habitica-uid "-emacs-habitica")) ; X-Client needs uid, which is not available yet, this will be fixed after first successful login.
+           (url-request-method "POST")
+           (url-request-extra-headers `(("Content-Type" . "application/json")
+                                        ("x-client" . ,x-client-header)))
+           (url-request-data (json-encode `((username . ,username) (password . ,password))))
+           (data nil))
       (with-current-buffer (url-retrieve-synchronously url)
         (goto-char (point-min))
         (delete-region (point-min) (string-match-p "{" (buffer-string)))
