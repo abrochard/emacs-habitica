@@ -264,7 +264,7 @@ Logs full request and response details for debugging."
       ;; (message "  %s: %s" (car header) (cdr header))
       )
     ;; (when url-request-data
-    ;;   (message "[Habitica] Body: %s" url-request-data))
+      ;; (message "[Habitica] Body: %s" url-request-data))
 
     (with-current-buffer (url-retrieve-synchronously url t t)
       (goto-char (point-min))
@@ -280,12 +280,9 @@ Logs full request and response details for debugging."
       ;; Move to beginning of body (after headers)
       (unless (re-search-forward "^$" nil t)
         (error "[Habitica] Failed to find end of headers"))
-
-      (let ((json-object-type 'alist)
-            (json-array-type  'list)
-            (json-key-type    'symbol))
+     
         (let* ((json (condition-case err
-                         (json-read)
+                         (json-parse-buffer :object-type 'alist :array-type 'list)
                        (error
                         (error "[Habitica] Failed to parse JSON: %s" err))))
                (success (alist-get 'success json))
@@ -294,7 +291,7 @@ Logs full request and response details for debugging."
           ;; (message "[Habitica] Parsed JSON: %S" json)
           (unless success
             (error "[Habitica] API error: %s" message))
-          data)))))
+          data))))
 
 
 (defun habitica-api-get-tasks ()
